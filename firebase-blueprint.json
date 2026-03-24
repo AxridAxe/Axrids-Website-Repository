@@ -1,0 +1,183 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "alias": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["email", "displayName", "role"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A forum post",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "content": { "type": "string" },
+        "isVisible": { "type": "boolean" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "authorId", "authorName", "createdAt", "isVisible"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a post",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "authorId", "authorName", "createdAt"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Site-wide settings",
+      "type": "object",
+      "properties": {
+        "aboutText": { "type": "string" },
+        "instagramUrl": { "type": "string" },
+        "youtubeUrl": { "type": "string" },
+        "soundcloudUrl": { "type": "string" }
+      }
+    },
+    "Album": {
+      "title": "Album",
+      "description": "A music album containing ordered tracks",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "artist": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "releaseDate": { "type": "string" },
+        "description": { "type": "string" },
+        "trackIds": { "type": "array", "items": { "type": "string" } },
+        "isVisible": { "type": "boolean" },
+        "authorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "trackIds", "isVisible", "authorId", "createdAt"]
+    },
+    "Track": {
+      "title": "Track",
+      "description": "A music track",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "artist": { "type": "string" },
+        "audioUrl": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "isVisible": { "type": "boolean" },
+        "authorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "trackLink": { "type": "string" },
+        "genre": { "type": "string" },
+        "album": { "type": "string" },
+        "description": { "type": "string" },
+        "privacy": { "type": "string", "enum": ["public", "private", "scheduled"] },
+        "buyLink": { "type": "string" },
+        "recordLabel": { "type": "string" },
+        "releaseDate": { "type": "string" },
+        "publisher": { "type": "string" },
+        "soundcloudUrl": { "type": "string" },
+        "isExplicit": { "type": "boolean" },
+        "enableDirectDownloads": { "type": "boolean" },
+        "offlineListening": { "type": "boolean" },
+        "displayEmbedCode": { "type": "boolean" },
+        "allowComments": { "type": "boolean" },
+        "showCommentsToPublic": { "type": "boolean" },
+        "licenseType": { "type": "string", "enum": ["all-rights-reserved", "creative-commons"] },
+        "sharedWith": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["title", "artist", "audioUrl", "coverUrl", "isVisible", "createdAt", "authorId", "releaseDate"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A direct message conversation between two users",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "lastSenderId": { "type": "string" },
+        "unreadCount": { "type": "object" }
+      },
+      "required": ["participants", "lastMessageAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single message in a conversation",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "content", "createdAt"]
+    },
+    "ChangelogEntry": {
+      "title": "ChangelogEntry",
+      "description": "A record of a change made to the website",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "type": { "type": "string", "enum": ["major", "minor"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "date", "time", "type", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Forum posts"
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments on a post"
+    },
+    "/settings/{settingId}": {
+      "schema": "Settings",
+      "description": "Site-wide settings"
+    },
+    "/albums/{albumId}": {
+      "schema": "Album",
+      "description": "Music albums"
+    },
+    "/tracks/{trackId}": {
+      "schema": "Track",
+      "description": "Music tracks"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Direct message conversations"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages in a conversation"
+    },
+    "/changelog/{entryId}": {
+      "schema": "ChangelogEntry",
+      "description": "Website changelog"
+    }
+  }
+}

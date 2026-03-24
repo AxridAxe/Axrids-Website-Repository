@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh -i ~/.ssh/pi_key luke@192.168.0.34 \"echo ''luke:raspberry'' | sudo chpasswd && echo done\")"
+    ]
+  }
+}
