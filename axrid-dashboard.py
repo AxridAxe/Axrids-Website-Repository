@@ -443,8 +443,7 @@ class Dashboard(tk.Tk):
                                    bg=CARD2, fg=DIM, anchor="w")
         self.deploy_lbl.pack(side="left")
         for txt, col, cmd in [
-            ("⟳ RESTART", YELLOW, self._restart),
-            ("⇗ OPEN SITE", BLUE,  self._open_browser),
+            ("⇗ OPEN SITE", BLUE, self._open_browser),
         ]:
             tk.Button(inner, text=txt, font=(FONT, 9, "bold"),
                       bg=DIM2, fg=col, activebackground=BORDER,
