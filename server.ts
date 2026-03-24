@@ -1151,7 +1151,7 @@ setInterval(() => {
 }, 1000);
 
 poll();
-setInterval(poll, 1000);
+setInterval(poll, 5000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
 </script>
 </body></html>`);
@@ -1179,12 +1179,12 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) poll
     const fmt = (b: number) => b > 1e9 ? `${(b/1e9).toFixed(1)} GB` : `${(b/1e6).toFixed(0)} MB`;
     const memory = { used: fmt(usedMem), total: fmt(totalMem), pct: memPct };
 
-    // Read CPU via top -bn1 (single pass, fast)
+    // Read CPU from /proc/stat (instant, no shell overhead)
     let cpu = 0;
     try {
-      const cpuRaw = sh("top -bn1 | grep -i 'cpu'");
-      const idleMatch = cpuRaw.match(/(\d+\.\d+)\s*id/);
-      if (idleMatch) cpu = Math.round(100 - parseFloat(idleMatch[1]));
+      const stat = require("fs").readFileSync("/proc/stat", "utf8").split("\n")[0].split(/\s+/).slice(1).map(Number);
+      const idle = stat[3]; const total = stat.reduce((a: number, b: number) => a + b, 0);
+      cpu = Math.round((1 - idle / total) * 100);
     } catch { cpu = 0; }
 
     const diskRaw = sh("df / | tail -1").split(/\s+/);
