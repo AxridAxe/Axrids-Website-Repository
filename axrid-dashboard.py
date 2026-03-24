@@ -22,10 +22,11 @@ ORANGE = "#ff6d00"
 FONT   = "Helvetica"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-def lbl(parent, text="", size=9, bold=False, color=FG, anchor="w", **kw):
+def lbl(parent, text="", size=9, bold=False, color=FG, anchor="w", bg=None, **kw):
     w = "bold" if bold else "normal"
     return tk.Label(parent, text=text, font=(FONT, size, w),
-                    bg=parent.cget("bg"), fg=color, anchor=anchor, **kw)
+                    bg=bg if bg is not None else parent.cget("bg"),
+                    fg=color, anchor=anchor, **kw)
 
 def sep(parent, pad=0):
     tk.Frame(parent, bg=BORDER, height=1).pack(fill="x", padx=pad, pady=4)
