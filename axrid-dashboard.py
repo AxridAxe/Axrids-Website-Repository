@@ -401,7 +401,7 @@ class Dashboard(tk.Tk):
         self.clock_lbl = tk.Label(topbar, text="", font=(FONT, 11, "bold"),
                                   bg=CARD2, fg=FG)
         self.clock_lbl.pack(side="right", padx=12)
-        tk.Button(topbar, text="⊟", font=(FONT, 12), bg=CARD2, fg=DIM,
+        tk.Button(topbar, text="⌂", font=(FONT, 12), bg=CARD2, fg=DIM,
                   activebackground=CARD2, activeforeground=ACCENT,
                   relief="flat", cursor="hand2", bd=0,
                   command=self._hide).pack(side="right", padx=4)
@@ -624,8 +624,11 @@ class Dashboard(tk.Tk):
     def _open_browser(self): self._cmd("DISPLAY=:0 chromium-browser --new-window https://axrid.com &")
     def _hide(self):        self.withdraw()
     def _reload(self):
-        self._cmd("pkill -f axrid-dashboard.py")
-        self._cmd(f"DISPLAY=:0 nohup python3 {os.path.abspath(__file__)} &")
+        script = os.path.abspath(__file__)
+        subprocess.Popen(["bash", "-c", f"sleep 1 && DISPLAY=:0 python3 {script} &"],
+                         start_new_session=True)
+        self.destroy()
+        os.kill(os.getpid(), signal.SIGTERM)
     def _show(self):
         sw = self.winfo_screenwidth(); sh = self.winfo_screenheight()
         self.geometry(f"{sw}x{sh}+0+0")
