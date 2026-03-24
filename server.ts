@@ -888,92 +888,97 @@ async function startServer() {
     res.setHeader("Content-Type", "text/html");
     res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Axrid Live Dashboard</title>
+<title>Axrid Dashboard</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#080808;color:#aaa;font-family:Helvetica,Arial,sans-serif;font-size:13px;overflow-x:hidden}
-.topbar{background:#131313;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid #1a1a1a;height:46px}
-.topbar .accent-bar{width:4px;height:100%;background:#2979ff;flex-shrink:0}
-.topbar .title{font-size:20px;font-weight:bold;color:#fff;letter-spacing:-0.5px}
-.topbar .sub{font-size:12px;color:#333;font-weight:bold;text-transform:uppercase;letter-spacing:2px}
-.topbar .status-dot{font-size:12px}.topbar .status-txt{font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px}
-.topbar .uptime{font-size:9px;color:#333;margin-left:4px}
-.topbar .clock{font-size:11px;font-weight:bold;color:#aaa;margin-left:auto;font-family:monospace}
-.body{display:grid;grid-template-columns:1fr 2fr 1fr;gap:8px;padding:8px 10px;height:calc(100vh - 46px - 40px - 40px);overflow:hidden}
-.col{display:flex;flex-direction:column;gap:6px;overflow:hidden}
+html,body{height:100%;overflow:hidden;background:#080808;color:#aaa;font-family:Helvetica,Arial,sans-serif;font-size:13px}
+#wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+/* topbar */
+#topbar{flex-shrink:0;background:#131313;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid #1a1a1a;height:44px}
+#topbar .ab{width:4px;align-self:stretch;background:#2979ff}
+#topbar .title{font-size:19px;font-weight:bold;color:#fff;letter-spacing:-0.5px}
+#topbar .sub{font-size:11px;color:#333;font-weight:bold;text-transform:uppercase;letter-spacing:2px}
+#topbar .sdot{font-size:11px}
+#topbar .stxt{font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px}
+#topbar .upt{font-size:9px;color:#333;margin-left:2px}
+#topbar .clk{font-size:11px;font-weight:bold;color:#aaa;margin-left:auto;font-family:monospace}
+/* main 3-col body */
+#body{flex:1;display:grid;grid-template-columns:1fr 2fr 1fr;gap:6px;padding:6px 8px;min-height:0}
+.col{display:flex;flex-direction:column;gap:5px;min-height:0;overflow:hidden}
 .card{background:#0e0e0e;border:1px solid #1a1a1a;flex-shrink:0}
-.card-hdr{background:#131313;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;padding:6px 12px;gap:6px}
-.card-hdr .bar{width:3px;height:14px;flex-shrink:0}
-.card-hdr span{font-size:10px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:2px}
-.card-body{padding:10px 12px}
-.lbl{font-size:9px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:1px;margin-bottom:1px}
-.val{font-size:15px;font-weight:bold;margin-bottom:6px}
-.val.big{font-size:22px}
-.val.sm{font-size:12px}
-.row-bar{width:100%;height:4px;background:#1c1c1c;border-radius:2px;margin-top:3px;margin-bottom:8px}
-.row-bar-fill{height:100%;border-radius:2px;transition:width .4s}
-.nums-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px}
-.num-cell .lbl{margin-bottom:2px}
-canvas{width:100%;height:50px;display:block}
-.divider{height:1px;background:#1a1a1a;margin:6px 0}
-.two-col{display:grid;grid-template-columns:1fr 2fr;gap:8px}
-.item-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a1a}
-.item-row:last-child{border-bottom:none}
-.item-row .k{font-size:11px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:1px}
-.item-row .v{font-size:15px;font-weight:bold}
-.deploy-row{display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #1a1a1a;overflow:hidden}
-.deploy-row:last-child{border:none}
-.deploy-row .hash{font-family:monospace;font-size:9px;color:#333;flex-shrink:0;width:50px}
-.deploy-row .msg{font-size:10px;color:#aaa;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.deploy-row .time{font-family:monospace;font-size:8px;color:#333;flex-shrink:0}
-.log-card{background:#0e0e0e;border:1px solid #1a1a1a;padding:0 10px}
-.log-row{display:flex;align-items:center;gap:10px;padding:3px 0;border-bottom:1px solid #111;font-family:monospace;font-size:10px;color:#555}
-.log-row:last-child{border:none}
-.log-row .dot{font-size:9px;flex-shrink:0}
-.log-row .ts{flex-shrink:0;width:130px}
-.log-row .req{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.log-row .st{flex-shrink:0;width:36px;text-align:right}
-.footer{background:#131313;border-top:1px solid #1a1a1a;display:flex;align-items:center;padding:0 14px;height:40px}
-.footer .deploy-txt{font-size:9px;color:#333}
-.footer a{margin-left:auto;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#2979ff;text-decoration:none;background:#1c1c1c;padding:5px 12px}
-.green{color:#00e676}.blue{color:#2979ff}.yellow{color:#ffd600}.red{color:#ff1744}.purple{color:#d500f9}.teal{color:#00bcd4}.orange{color:#ff6d00}.white{color:#fff}.dim{color:#333}
+.card.grow{flex:1;min-height:0;overflow:hidden}
+.ch{background:#131313;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;padding:5px 10px;gap:5px}
+.ch .b{width:3px;height:12px;flex-shrink:0}
+.ch span{font-size:9px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:2px}
+.cb{padding:8px 10px}
+.lbl{font-size:8px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:1px;margin-bottom:1px}
+.val{font-size:14px;font-weight:bold;margin-bottom:5px}
+.val.big{font-size:20px}
+.val.sm{font-size:11px}
+.rb{width:100%;height:3px;background:#1c1c1c;border-radius:2px;margin-top:2px;margin-bottom:7px}
+.rbf{height:100%;border-radius:2px;transition:width .4s}
+.ng{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:5px}
+canvas{width:100%;height:44px;display:block}
+.dv{height:1px;background:#1a1a1a;margin:5px 0}
+.tc{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+.ir{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #1a1a1a}
+.ir:last-child{border:none}
+.ir .k{font-size:10px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:1px}
+.ir .v{font-size:14px;font-weight:bold}
+.dr{display:flex;align-items:center;gap:5px;padding:2px 0;border-bottom:1px solid #1a1a1a;overflow:hidden}
+.dr:last-child{border:none}
+.dr .h{font-family:monospace;font-size:8px;color:#333;flex-shrink:0;width:46px}
+.dr .m{font-size:9px;color:#aaa;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dr .t{font-family:monospace;font-size:8px;color:#333;flex-shrink:0}
+/* log */
+#logwrap{flex-shrink:0;background:#0e0e0e;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a}
+#loghdr{display:flex;align-items:center;gap:5px;padding:4px 10px;background:#131313;border-bottom:1px solid #1a1a1a}
+#log{padding:2px 10px}
+.lr{display:flex;align-items:center;gap:8px;padding:2px 0;border-bottom:1px solid #111;font-family:monospace;font-size:9px;color:#444}
+.lr:last-child{border:none}
+.lr .dot{font-size:8px;flex-shrink:0}
+.lr .ts{flex-shrink:0;width:120px}
+.lr .rq{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lr .st{flex-shrink:0;width:32px;text-align:right}
+/* footer */
+#foot{flex-shrink:0;background:#131313;border-top:1px solid #1a1a1a;display:flex;align-items:center;padding:0 12px;height:32px}
+#foot .dt{font-size:8px;color:#333}
+#foot a{margin-left:auto;font-size:8px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#2979ff;text-decoration:none;background:#1c1c1c;padding:4px 10px}
+.green{color:#00e676}.blue{color:#2979ff}.yellow{color:#ffd600}.red{color:#ff1744}.purple{color:#d500f9}.teal{color:#00bcd4}.orange{color:#ff6d00}.white{color:#fff}
 </style>
 </head><body>
-<div class="topbar">
-  <div class="accent-bar"></div>
+<div id="wrap">
+<div id="topbar">
+  <div class="ab"></div>
   <span class="title">AXRID</span>
   <span class="sub">Server Dashboard</span>
-  <span class="status-dot green" id="dot">●</span>
-  <span class="status-txt green" id="status">ONLINE</span>
-  <span class="uptime" id="uptime"></span>
-  <span class="clock" id="clock"></span>
+  <span class="sdot green" id="dot">●</span>
+  <span class="stxt green" id="status">ONLINE</span>
+  <span class="upt" id="uptime"></span>
+  <span class="clk" id="clock"></span>
 </div>
 
-<div class="body">
+<div id="body">
   <!-- LEFT -->
   <div class="col">
     <div class="card">
-      <div class="card-hdr"><div class="bar" style="background:#00bcd4"></div><span>Address</span></div>
-      <div class="card-body">
+      <div class="ch"><div class="b" style="background:#00bcd4"></div><span>Address</span></div>
+      <div class="cb">
         <div class="lbl">Domain</div><div class="val green">axrid.com</div>
         <div class="lbl">Local</div><div class="val blue sm" id="localIp">—</div>
         <div class="lbl">Public IP</div><div class="val teal sm" id="publicIp">—</div>
       </div>
     </div>
-    <div class="card" style="flex:1">
-      <div class="card-hdr"><div class="bar" style="background:#d500f9"></div><span>System</span></div>
-      <div class="card-body">
-        <div class="lbl">CPU</div>
-        <div class="val blue" id="cpu">—</div>
-        <div class="row-bar"><div class="row-bar-fill blue" id="cpu-bar" style="width:0%"></div></div>
-        <div class="lbl">Memory</div>
-        <div class="val purple" id="mem">—</div>
-        <div class="row-bar"><div class="row-bar-fill" id="mem-bar" style="width:0%;background:#d500f9"></div></div>
-        <div class="lbl">Disk</div>
-        <div class="val teal" id="disk">—</div>
-        <div class="row-bar"><div class="row-bar-fill" id="disk-bar" style="width:0%;background:#00bcd4"></div></div>
-        <div class="lbl">Temperature</div>
-        <div class="val yellow" id="temp">—</div>
+    <div class="card grow">
+      <div class="ch"><div class="b" style="background:#d500f9"></div><span>System</span></div>
+      <div class="cb">
+        <div class="lbl">CPU</div><div class="val blue" id="cpu">—</div>
+        <div class="rb"><div class="rbf" id="cpu-bar" style="width:0%;background:#2979ff"></div></div>
+        <div class="lbl">Memory</div><div class="val purple" id="mem">—</div>
+        <div class="rb"><div class="rbf" id="mem-bar" style="width:0%;background:#d500f9"></div></div>
+        <div class="lbl">Disk</div><div class="val teal" id="disk">—</div>
+        <div class="rb"><div class="rbf" id="disk-bar" style="width:0%;background:#00bcd4"></div></div>
+        <div class="lbl">Temperature</div><div class="val yellow" id="temp">—</div>
       </div>
     </div>
   </div>
@@ -981,67 +986,63 @@ canvas{width:100%;height:50px;display:block}
   <!-- CENTER -->
   <div class="col">
     <div class="card">
-      <div class="card-hdr"><div class="bar" style="background:#00e676"></div><span>Live Traffic</span></div>
-      <div class="card-body">
-        <div class="nums-grid">
-          <div class="num-cell"><div class="lbl">Req / Min</div><div class="val big green" id="rpm">—</div></div>
-          <div class="num-cell"><div class="lbl">Visitors Today</div><div class="val big blue" id="visitors">—</div></div>
-          <div class="num-cell"><div class="lbl">Requests Today</div><div class="val big white" id="reqtoday">—</div></div>
-          <div class="num-cell"><div class="lbl">Active Conns</div><div class="val big teal" id="conns">—</div></div>
+      <div class="ch"><div class="b" style="background:#00e676"></div><span>Live Traffic</span></div>
+      <div class="cb">
+        <div class="ng">
+          <div><div class="lbl">Req / Min</div><div class="val big green" id="rpm">—</div></div>
+          <div><div class="lbl">Visitors Today</div><div class="val big blue" id="visitors">—</div></div>
+          <div><div class="lbl">Requests Today</div><div class="val big white" id="reqtoday">—</div></div>
+          <div><div class="lbl">Active Conns</div><div class="val big teal" id="conns">—</div></div>
         </div>
-        <div class="divider"></div>
-        <div class="lbl" style="margin-bottom:4px">Requests Per Minute</div>
+        <div class="dv"></div>
+        <div class="lbl" style="margin-bottom:3px">Requests Per Minute</div>
         <canvas id="spark"></canvas>
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><div class="bar" style="background:#ff6d00"></div><span>Transfer &amp; Top Track</span></div>
-      <div class="card-body two-col">
+      <div class="ch"><div class="b" style="background:#ff6d00"></div><span>Transfer &amp; Top Track</span></div>
+      <div class="cb tc">
         <div><div class="lbl">Bandwidth Today</div><div class="val orange" id="bw">—</div></div>
-        <div><div class="lbl">Top Track Today</div><div class="val white sm" id="top" style="font-size:12px;word-break:break-all">—</div></div>
+        <div><div class="lbl">Top Track Today</div><div class="val white sm" id="top">—</div></div>
       </div>
     </div>
-    <div class="card" style="flex:1">
-      <div class="card-hdr"><div class="bar" style="background:#333"></div><span>Recent Deploys</span></div>
-      <div class="card-body" id="deploys"></div>
+    <div class="card grow">
+      <div class="ch"><div class="b" style="background:#333"></div><span>Recent Deploys</span></div>
+      <div class="cb" id="deploys"></div>
     </div>
   </div>
 
   <!-- RIGHT -->
   <div class="col">
     <div class="card">
-      <div class="card-hdr"><div class="bar" style="background:#2979ff"></div><span>Site Content</span></div>
-      <div class="card-body">
-        <div class="item-row"><span class="k">Tracks</span><span class="v white" id="tracks">—</span></div>
-        <div class="item-row"><span class="k">Users</span><span class="v white" id="users">—</span></div>
-        <div class="item-row"><span class="k">Albums</span><span class="v white" id="albums">—</span></div>
-        <div class="item-row"><span class="k">Posts</span><span class="v white" id="posts">—</span></div>
+      <div class="ch"><div class="b" style="background:#2979ff"></div><span>Site Content</span></div>
+      <div class="cb">
+        <div class="ir"><span class="k">Tracks</span><span class="v white" id="tracks">—</span></div>
+        <div class="ir"><span class="k">Users</span><span class="v white" id="users">—</span></div>
+        <div class="ir"><span class="k">Albums</span><span class="v white" id="albums">—</span></div>
+        <div class="ir"><span class="k">Posts</span><span class="v white" id="posts">—</span></div>
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><div class="bar" style="background:#ffd600"></div><span>Today at a Glance</span></div>
-      <div class="card-body">
-        <div class="item-row"><span class="k">Unique Visitors</span><span class="v green" id="unique">—</span></div>
-        <div class="item-row"><span class="k">Track Plays</span><span class="v blue" id="plays">—</span></div>
-        <div class="item-row"><span class="k">Errors 4xx/5xx</span><span class="v red" id="errors">—</span></div>
+      <div class="ch"><div class="b" style="background:#ffd600"></div><span>Today at a Glance</span></div>
+      <div class="cb">
+        <div class="ir"><span class="k">Unique Visitors</span><span class="v green" id="unique">—</span></div>
+        <div class="ir"><span class="k">Track Plays</span><span class="v blue" id="plays">—</span></div>
+        <div class="ir"><span class="k">Errors 4xx/5xx</span><span class="v red" id="errors">—</span></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- LOG -->
-<div class="log-card">
-  <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#131313;border-bottom:1px solid #1a1a1a">
-    <div style="width:3px;height:14px;background:#333"></div>
-    <span style="font-size:10px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:2px">Live Activity Log</span>
-  </div>
-  <div id="log" style="padding:0 12px"></div>
+<div id="logwrap">
+  <div id="loghdr"><div style="width:3px;height:12px;background:#333"></div><span style="font-size:9px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:2px">Live Activity Log</span></div>
+  <div id="log"></div>
 </div>
 
-<!-- FOOTER -->
-<div class="footer">
-  <span class="deploy-txt" id="last-deploy"></span>
+<div id="foot">
+  <span class="dt" id="last-deploy"></span>
   <a href="https://axrid.com" target="_blank">⇗ Open Site</a>
+</div>
 </div>
 
 <script>
@@ -1082,9 +1083,9 @@ async function poll() {
 
     // topbar
     const on = sv?.online;
-    document.getElementById('dot').className = 'status-dot ' + (on?'green':'red');
+    document.getElementById('dot').className = 'sdot ' + (on?'green':'red');
     document.getElementById('status').textContent = on ? 'ONLINE' : 'OFFLINE';
-    document.getElementById('status').className = 'status-txt ' + (on?'green':'red');
+    document.getElementById('status').className = 'stxt ' + (on?'green':'red');
     set('uptime', sv?.pm2Uptime ? 'uptime: ' + sv.pm2Uptime : '');
 
     // address
@@ -1119,9 +1120,9 @@ async function poll() {
     const dep = document.getElementById('deploys');
     if (dep && d.deploys?.length) {
       dep.innerHTML = d.deploys.slice(0,5).map(x =>
-        '<div class="deploy-row"><span class="hash">' + x.hash + '</span>' +
-        '<span class="msg">' + x.subject + '</span>' +
-        '<span class="time">' + x.relTime + '</span></div>'
+        '<div class="dr"><span class="h">' + x.hash + '</span>' +
+        '<span class="m">' + x.subject + '</span>' +
+        '<span class="t">' + x.relTime + '</span></div>'
       ).join('');
       set('last-deploy', 'Last deploy: ' + d.deploys[0].subject + '  ·  ' + d.deploys[0].relTime);
     }
@@ -1131,8 +1132,8 @@ async function poll() {
     if (log && d.recentRequests?.length) {
       log.innerHTML = d.recentRequests.map(r => {
         const c = r.status?.startsWith('2') ? 'green' : r.status?.startsWith('3') ? 'yellow' : 'red';
-        return '<div class="log-row"><span class="dot ' + c + '">●</span><span class="ts">' +
-          r.ts + '</span><span class="req">' + r.req + '</span><span class="st ' + c + '">' + r.status + '</span></div>';
+        return '<div class="lr"><span class="dot ' + c + '">●</span><span class="ts">' +
+          r.ts + '</span><span class="rq">' + r.req + '</span><span class="st ' + c + '">' + r.status + '</span></div>';
       }).join('');
     }
   } catch(e) { console.error(e); }
