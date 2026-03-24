@@ -5115,7 +5115,7 @@ const WebDashboard = ({ user, isAdmin }: { user: LocalUser | null; isAdmin: bool
   );
 
   return (
-    <div className="min-h-screen bg-ink text-paper flex flex-col">
+    <div className="min-h-screen bg-ink text-paper flex flex-col pt-16">
       {/* Top bar */}
       <div className="flex items-center gap-4 px-5 py-3 bg-white/5 border-b border-white/10">
         <div className="w-1 h-6 rounded-full bg-blue-500" />
