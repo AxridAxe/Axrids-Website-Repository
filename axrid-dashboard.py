@@ -142,58 +142,79 @@ class SettingsOverlay(tk.Toplevel):
             w.destroy()
         self._close_btn()
 
+        # Subtle background texture
+        tk.Frame(self, bg=BG).place(relx=0, rely=0, relwidth=1, relheight=1)
+
         outer = tk.Frame(self, bg=BG)
         outer.place(relx=0.5, rely=0.5, anchor="center")
 
-        card = tk.Frame(outer, bg=CARD, padx=40, pady=40)
-        card.pack()
+        # Title area
+        tk.Label(outer, text="AXRID", font=(FONT, 28, "bold"),
+                 bg=BG, fg=ACCENT).pack(pady=(0, 2))
+        tk.Label(outer, text="SERVER ACCESS", font=(FONT, 9, "bold"),
+                 bg=BG, fg=DIM).pack(pady=(0, 30))
 
-        tk.Label(card, text="SERVER SETTINGS", font=(FONT, 11, "bold"),
-                 bg=CARD, fg=DIM).pack(anchor="w", pady=(0, 4))
-        tk.Label(card, text="Enter PIN to continue",
-                 font=(FONT, 9), bg=CARD, fg=DIM).pack(anchor="w", pady=(0, 20))
-
+        # Dot display — grows as you type, no max shown
         self._pin = ""
-        self._pin_dots = tk.Label(card, text="○ ○ ○ ○ ○ ○", font=(FONT, 18),
-                                  bg=CARD, fg=DIM)
-        self._pin_dots.pack(pady=(0, 16))
+        self._pin_dots = tk.Label(outer, text="", font=(FONT, 22),
+                                  bg=BG, fg=ACCENT, width=14, anchor="center")
+        self._pin_dots.pack(pady=(0, 6))
 
-        self._pin_err = tk.Label(card, text="", font=(FONT, 9), bg=CARD, fg=RED)
-        self._pin_err.pack(pady=(0, 8))
+        self._pin_err = tk.Label(outer, text="", font=(FONT, 9),
+                                 bg=BG, fg=RED)
+        self._pin_err.pack(pady=(0, 20))
 
-        pad = tk.Frame(card, bg=CARD)
+        # Numpad
+        pad = tk.Frame(outer, bg=BG)
         pad.pack()
-        for i, digits in enumerate(["1 2 3", "4 5 6", "7 8 9", "  0  "]):
-            row = tk.Frame(pad, bg=CARD)
+        BTN_SIZE = 5
+        for digits in ["1 2 3", "4 5 6", "7 8 9", "  0  "]:
+            row = tk.Frame(pad, bg=BG)
             row.pack()
             for d in digits.split():
-                tk.Button(row, text=d, font=(FONT, 14, "bold"),
-                          bg=CARD2, fg=ACCENT, activebackground=BORDER,
-                          activeforeground=ACCENT, relief="flat",
-                          cursor="hand2", bd=0, width=4, pady=8,
-                          command=lambda x=d: self._pin_press(x)).pack(side="left", padx=4, pady=4)
+                tk.Button(row, text=d, font=(FONT, 16, "bold"),
+                          bg=CARD, fg=ACCENT,
+                          activebackground=CARD2, activeforeground=ACCENT,
+                          relief="flat", cursor="hand2", bd=0,
+                          width=BTN_SIZE, pady=12,
+                          command=lambda x=d: self._pin_press(x)).pack(
+                              side="left", padx=5, pady=5)
 
-        tk.Button(pad, text="⌫ Clear", font=(FONT, 10),
-                  bg=CARD2, fg=DIM, activebackground=BORDER,
-                  relief="flat", cursor="hand2", bd=0, pady=6,
-                  command=self._pin_clear).pack(pady=(8, 0))
+        # Bottom row: clear + backspace
+        bot = tk.Frame(pad, bg=BG)
+        bot.pack(pady=(6, 0))
+        tk.Button(bot, text="CLR", font=(FONT, 11, "bold"),
+                  bg=CARD, fg=RED, activebackground=CARD2,
+                  activeforeground=RED, relief="flat", cursor="hand2",
+                  bd=0, width=BTN_SIZE, pady=10,
+                  command=self._pin_clear).pack(side="left", padx=5)
+        tk.Button(bot, text="⌫", font=(FONT, 14),
+                  bg=CARD, fg=DIM, activebackground=CARD2,
+                  activeforeground=ACCENT, relief="flat", cursor="hand2",
+                  bd=0, width=BTN_SIZE, pady=10,
+                  command=self._pin_backspace).pack(side="left", padx=5)
 
     def _pin_press(self, d):
-        if len(self._pin) >= 6:
+        if len(self._pin) >= 10:
             return
         self._pin += d
-        filled = "● " * len(self._pin) + "○ " * (6 - len(self._pin))
-        self._pin_dots.config(text=filled.strip())
-        if len(self._pin) == 6:
-            if self._pin == ADMIN_PIN:
-                self._show_settings()
-            else:
-                self._pin_err.config(text="Incorrect PIN.")
-                self.after(600, self._pin_clear)
+        self._pin_dots.config(text="  ●  " * len(self._pin))
+        if self._pin == ADMIN_PIN:
+            self._pin_dots.config(fg=GREEN)
+            self.after(300, self._show_settings)
+        elif len(self._pin) >= len(ADMIN_PIN):
+            self._pin_dots.config(fg=RED)
+            self._pin_err.config(text="Incorrect PIN.")
+            self.after(600, self._pin_clear)
+
+    def _pin_backspace(self):
+        self._pin = self._pin[:-1]
+        self._pin_dots.config(text="  ●  " * len(self._pin), fg=ACCENT)
+        self._pin_err.config(text="")
 
     def _pin_clear(self):
         self._pin = ""
-        self._pin_dots.config(text="○ ○ ○ ○ ○ ○")
+        self._pin_dots.config(text="", fg=ACCENT)
         self._pin_err.config(text="")
 
     def _show_settings(self):
