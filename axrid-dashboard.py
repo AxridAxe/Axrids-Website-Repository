@@ -85,8 +85,8 @@ class Dashboard(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Axrid Server")
-        self.geometry(f"{W}x900")
-        self.resizable(False, False)
+        self.attributes("-fullscreen", True)
+        self.overrideredirect(True)
         self.configure(bg=BG)
         self._build()
         self._schedule()
