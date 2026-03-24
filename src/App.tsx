@@ -26,7 +26,6 @@ export interface LocalUser {
   role: "admin" | "user";
   photoURL: string | null;
 }
-import { GoogleGenAI } from "@google/genai";
 import { motion, AnimatePresence } from "motion/react";
 import Markdown from "react-markdown";
 import TrackPage from "./components/TrackPage";
@@ -5724,60 +5723,7 @@ function AppContent({ user, setUser, profile, setProfile, isAdmin, posts, tracks
       return;
     }
 
-    confirmAction(`Attempt to find SoundCloud links for ${missingTracks.length} tracks using AI? This may take a moment and cost API credits.`, async () => {
-      setIsAutoFinding(true);
-      setUploadStatus("Searching for SoundCloud links...");
-
-      try {
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-        let foundCount = 0;
-        
-        // Process in batches of 5 to manage API usage and rate limits
-        const BATCH_SIZE = 5;
-        for (let i = 0; i < missingTracks.length; i += BATCH_SIZE) {
-          const batch = missingTracks.slice(i, i + BATCH_SIZE);
-          
-          if (i > 0) {
-            setUploadStatus(`Processed ${i}/${missingTracks.length} tracks. Continuing...`);
-          }
-
-          await Promise.all(batch.map(async (track) => {
-            try {
-              const prompt = `Find the official SoundCloud track URL for the song "${track.title}" by the artist "Axrid". Return ONLY the URL, or "NOT_FOUND" if you can't find it.`;
-              
-              const response = await ai.models.generateContent({
-                model: "gemini-3.1-flash-lite-preview",
-                contents: prompt,
-                config: {
-                  tools: [{ googleSearch: {} }]
-                }
-              });
-
-              const foundUrl = response.text?.trim();
-              
-              if (foundUrl && foundUrl.startsWith("http") && foundUrl.includes("soundcloud.com")) {
-                await handleUpdateTrack(track.id, { soundcloudUrl: foundUrl });
-                foundCount++;
-              }
-            } catch (err) {
-              console.error(`Error finding link for ${track.title}:`, err);
-            }
-          }));
-          
-          // Delay between batches
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-
-        setUploadStatus(`Auto-find complete! Found links for ${foundCount} tracks.`);
-        showNotification(`Found links for ${foundCount} tracks.`, 'success');
-        setTimeout(() => setUploadStatus(""), 5000);
-      } catch (error: any) {
-        console.error("Error in auto-find:", error);
-        showNotification(`Error: ${error.message}`, 'error');
-      } finally {
-        setIsAutoFinding(false);
-      }
-    });
+    showNotification("Auto-find is no longer available.", 'info');
   };
 
   // migrateToFirebase removed — no longer using Firebase Storage
