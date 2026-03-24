@@ -117,6 +117,7 @@ async function startServer() {
   console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
 
   // --- Core middleware ---
+  app.set("trust proxy", 1);
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
@@ -127,7 +128,8 @@ async function startServer() {
       saveUninitialized: false,
       cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: true,
+        sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       },
     })
