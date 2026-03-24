@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import tkinter as tk
-import subprocess, glob, threading, time, os, signal, collections
+import subprocess, glob, threading, time, os, signal, collections, urllib.request, urllib.parse, json
 
 # ── Palette ───────────────────────────────────────────────────────────────────
 BG     = "#080808"
@@ -108,6 +108,142 @@ class Sparkline(tk.Canvas):
         self.create_polygon(*poly, fill=self._color, stipple="gray25",
                             outline="")
 
+# ── Settings Overlay ──────────────────────────────────────────────────────────
+class SettingsOverlay(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.overrideredirect(True)
+        sw = parent.winfo_screenwidth()
+        sh = parent.winfo_screenheight()
+        self.geometry(f"{sw}x{sh}+0+0")
+        self.configure(bg=BG)
+        self.lift()
+        self.focus_force()
+        self._session_cookie = None
+        self._build()
+
+    def _build(self):
+        # Full-screen dark overlay
+        outer = tk.Frame(self, bg=BG)
+        outer.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Close button top-right
+        tk.Button(self, text="✕", font=(FONT, 14), bg=BG, fg=DIM,
+                  activebackground=BG, activeforeground=ACCENT,
+                  relief="flat", cursor="hand2", bd=0,
+                  command=self.destroy).place(relx=1.0, rely=0.0,
+                                              anchor="ne", x=-20, y=20)
+
+        # Card
+        card = tk.Frame(outer, bg=CARD, padx=40, pady=40)
+        card.pack()
+
+        tk.Label(card, text="SERVER SETTINGS", font=(FONT, 11, "bold"),
+                 bg=CARD, fg=DIM).pack(anchor="w", pady=(0, 4))
+        tk.Label(card, text="Sign in with your Axrid account",
+                 font=(FONT, 9), bg=CARD, fg=DIM).pack(anchor="w", pady=(0, 20))
+
+        # Email
+        tk.Label(card, text="EMAIL", font=(FONT, 8, "bold"),
+                 bg=CARD, fg=DIM).pack(anchor="w")
+        self.email_var = tk.StringVar()
+        email_entry = tk.Entry(card, textvariable=self.email_var,
+                               font=(FONT, 11), bg=CARD2, fg=ACCENT,
+                               insertbackground=ACCENT, relief="flat",
+                               width=28, bd=4)
+        email_entry.pack(anchor="w", pady=(2, 12))
+        email_entry.focus_set()
+
+        # Password
+        tk.Label(card, text="PASSWORD", font=(FONT, 8, "bold"),
+                 bg=CARD, fg=DIM).pack(anchor="w")
+        self.pass_var = tk.StringVar()
+        tk.Entry(card, textvariable=self.pass_var, show="•",
+                 font=(FONT, 11), bg=CARD2, fg=ACCENT,
+                 insertbackground=ACCENT, relief="flat",
+                 width=28, bd=4).pack(anchor="w", pady=(2, 16))
+
+        self.error_lbl = tk.Label(card, text="", font=(FONT, 9),
+                                  bg=CARD, fg=RED)
+        self.error_lbl.pack(anchor="w", pady=(0, 8))
+
+        tk.Button(card, text="SIGN IN", font=(FONT, 10, "bold"),
+                  bg=ACCENT, fg="#000000", activebackground=FG,
+                  relief="flat", cursor="hand2", padx=20, pady=8, bd=0,
+                  command=self._login).pack(anchor="w")
+
+    def _login(self):
+        email = self.email_var.get().strip()
+        pw    = self.pass_var.get()
+        if not email or not pw:
+            self.error_lbl.config(text="Enter email and password.")
+            return
+        self.error_lbl.config(text="Signing in…")
+        threading.Thread(target=self._do_login, args=(email, pw), daemon=True).start()
+
+    def _do_login(self, email, pw):
+        try:
+            data = urllib.parse.urlencode({"email": email, "password": pw}).encode()
+            req  = urllib.request.Request(
+                "http://localhost:3000/api/auth/login",
+                data=data,
+                headers={"Content-Type": "application/x-www-form-urlencoded"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                body = json.loads(resp.read())
+                cookie = resp.headers.get("Set-Cookie", "")
+            if body.get("user", {}).get("role") == "admin":
+                self._session_cookie = cookie
+                self.after(0, self._show_settings)
+            else:
+                self.after(0, lambda: self.error_lbl.config(text="Admin access required."))
+        except Exception as e:
+            msg = "Invalid email or password."
+            self.after(0, lambda: self.error_lbl.config(text=msg))
+
+    def _show_settings(self):
+        for w in self.winfo_children():
+            w.destroy()
+
+        tk.Button(self, text="✕", font=(FONT, 14), bg=BG, fg=DIM,
+                  activebackground=BG, activeforeground=ACCENT,
+                  relief="flat", cursor="hand2", bd=0,
+                  command=self.destroy).place(relx=1.0, rely=0.0,
+                                              anchor="ne", x=-20, y=20)
+
+        outer = tk.Frame(self, bg=BG)
+        outer.place(relx=0.5, rely=0.5, anchor="center")
+
+        tk.Label(outer, text="SERVER SETTINGS", font=(FONT, 13, "bold"),
+                 bg=BG, fg=ACCENT).pack(anchor="w", pady=(0, 20))
+
+        def _action_btn(label, color, cmd):
+            tk.Button(outer, text=label, font=(FONT, 10, "bold"),
+                      bg=CARD, fg=color, activebackground=CARD2,
+                      activeforeground=color, relief="flat", cursor="hand2",
+                      padx=20, pady=10, bd=0, width=28,
+                      command=cmd).pack(pady=4, anchor="w")
+
+        self._status_lbl = tk.Label(outer, text="", font=(FONT, 9),
+                                    bg=BG, fg=GREEN)
+        self._status_lbl.pack(anchor="w", pady=(0, 10))
+
+        _action_btn("⟳  Restart Website Server", YELLOW, self._restart_server)
+        _action_btn("⏹  Stop Website Server",    RED,    self._stop_server)
+        _action_btn("▶  Start Website Server",   GREEN,  self._start_server)
+        _action_btn("⟳  Reboot Raspberry Pi",    ORANGE, self._reboot_pi)
+
+    def _run(self, cmd, msg):
+        def go():
+            subprocess.run(cmd, shell=True, stderr=subprocess.DEVNULL)
+            self.after(0, lambda: self._status_lbl.config(text=msg))
+        threading.Thread(target=go, daemon=True).start()
+
+    def _restart_server(self): self._run("pm2 restart axrid-website", "✓ Server restarted")
+    def _stop_server(self):    self._run("pm2 stop axrid-website",    "✓ Server stopped")
+    def _start_server(self):   self._run("pm2 start axrid-website",   "✓ Server started")
+    def _reboot_pi(self):      self._run("sudo reboot",               "Rebooting…")
+
+
 # ── Main App ──────────────────────────────────────────────────────────────────
 class Dashboard(tk.Tk):
     def __init__(self):
@@ -159,6 +295,10 @@ class Dashboard(tk.Tk):
                   activebackground=CARD2, activeforeground=ACCENT,
                   relief="flat", cursor="hand2", bd=0,
                   command=self._hide).pack(side="right", padx=4)
+        tk.Button(topbar, text="⚙", font=(FONT, 12), bg=CARD2, fg=DIM,
+                  activebackground=CARD2, activeforeground=ACCENT,
+                  relief="flat", cursor="hand2", bd=0,
+                  command=self._open_settings).pack(side="right", padx=4)
         tk.Frame(topbar, bg=BORDER, width=1).pack(side="right", fill="y",
                                                    pady=4)
 
@@ -258,7 +398,7 @@ class Dashboard(tk.Tk):
 
         # Sparkline
         tk.Frame(ct.body, bg=BORDER, height=1).pack(fill="x", pady=6)
-        lbl(ct.body, "REQUESTS PER MINUTE", size=8, bold=True,
+        lbl(ct.body, "REQUESTS PER MINUTE", size=10, bold=True,
             color=DIM).pack(anchor="w")
         self.spark = Sparkline(ct.body, color=GREEN)
         self.spark.pack(fill="x", pady=(4, 0))
@@ -373,6 +513,9 @@ class Dashboard(tk.Tk):
         sw = self.winfo_screenwidth(); sh = self.winfo_screenheight()
         self.geometry(f"{sw}x{sh}+0+0")
         self.deiconify(); self.lift()
+
+    def _open_settings(self):
+        SettingsOverlay(self)
 
     def _s(self, w, v):
         if w.cget("text") != v: w.config(text=v)
