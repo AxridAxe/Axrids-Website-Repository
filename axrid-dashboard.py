@@ -210,27 +210,137 @@ class SettingsOverlay(tk.Toplevel):
                   command=self.destroy).place(relx=1.0, rely=0.0,
                                               anchor="ne", x=-20, y=20)
 
+        # ── Tab bar
+        sw = self.winfo_screenwidth(); sh = self.winfo_screenheight()
         outer = tk.Frame(self, bg=BG)
-        outer.place(relx=0.5, rely=0.5, anchor="center")
+        outer.place(x=0, y=0, width=sw, height=sh)
 
-        tk.Label(outer, text="SERVER SETTINGS", font=(FONT, 13, "bold"),
-                 bg=BG, fg=ACCENT).pack(anchor="w", pady=(0, 20))
+        tabbar = tk.Frame(outer, bg=CARD2)
+        tabbar.pack(fill="x")
+        tk.Frame(outer, bg=BORDER, height=1).pack(fill="x")
 
-        def _action_btn(label, color, cmd):
-            tk.Button(outer, text=label, font=(FONT, 10, "bold"),
+        content = tk.Frame(outer, bg=BG)
+        content.pack(fill="both", expand=True, padx=40, pady=30)
+
+        self._active_tab = tk.StringVar(value="server")
+
+        def show_tab(name):
+            self._active_tab.set(name)
+            for w in content.winfo_children():
+                w.destroy()
+            if name == "server":
+                self._build_server_tab(content)
+            else:
+                self._build_mod_tab(content)
+            # update tab highlight
+            for n, btn in tab_btns.items():
+                btn.config(fg=ACCENT if n == name else DIM)
+
+        tab_btns = {}
+        for name, label in [("server", "Server"), ("moderation", "Moderation")]:
+            b = tk.Button(tabbar, text=label, font=(FONT, 10, "bold"),
+                          bg=CARD2, fg=DIM, activebackground=CARD2,
+                          activeforeground=ACCENT, relief="flat",
+                          cursor="hand2", bd=0, padx=20, pady=12,
+                          command=lambda n=name: show_tab(n))
+            b.pack(side="left")
+            tab_btns[name] = b
+
+        show_tab("server")
+
+    def _build_server_tab(self, parent):
+        tk.Label(parent, text="SERVER CONTROLS", font=(FONT, 13, "bold"),
+                 bg=BG, fg=ACCENT).pack(anchor="w", pady=(0, 16))
+
+        self._status_lbl = tk.Label(parent, text="", font=(FONT, 10),
+                                    bg=BG, fg=GREEN)
+        self._status_lbl.pack(anchor="w", pady=(0, 12))
+
+        def _btn(label, color, cmd):
+            tk.Button(parent, text=label, font=(FONT, 10, "bold"),
                       bg=CARD, fg=color, activebackground=CARD2,
                       activeforeground=color, relief="flat", cursor="hand2",
-                      padx=20, pady=10, bd=0, width=28,
+                      padx=20, pady=10, bd=0, width=30,
                       command=cmd).pack(pady=4, anchor="w")
 
-        self._status_lbl = tk.Label(outer, text="", font=(FONT, 9),
-                                    bg=BG, fg=GREEN)
-        self._status_lbl.pack(anchor="w", pady=(0, 10))
+        _btn("⟳  Restart Website Server", YELLOW, self._restart_server)
+        _btn("⏹  Stop Website Server",    RED,    self._stop_server)
+        _btn("▶  Start Website Server",   GREEN,  self._start_server)
+        _btn("⟳  Reboot Raspberry Pi",    ORANGE, self._reboot_pi)
 
-        _action_btn("⟳  Restart Website Server", YELLOW, self._restart_server)
-        _action_btn("⏹  Stop Website Server",    RED,    self._stop_server)
-        _action_btn("▶  Start Website Server",   GREEN,  self._start_server)
-        _action_btn("⟳  Reboot Raspberry Pi",    ORANGE, self._reboot_pi)
+    def _build_mod_tab(self, parent):
+        tk.Label(parent, text="MODERATION", font=(FONT, 13, "bold"),
+                 bg=BG, fg=ACCENT).pack(anchor="w", pady=(0, 16))
+
+        self._mod_status = tk.Label(parent, text="", font=(FONT, 10),
+                                    bg=BG, fg=GREEN)
+        self._mod_status.pack(anchor="w", pady=(0, 8))
+
+        # ── Users list
+        tk.Label(parent, text="USERS", font=(FONT, 9, "bold"),
+                 bg=BG, fg=DIM).pack(anchor="w", pady=(0, 4))
+
+        list_frame = tk.Frame(parent, bg=CARD)
+        list_frame.pack(fill="x", pady=(0, 16))
+
+        threading.Thread(target=self._load_users, args=(list_frame,), daemon=True).start()
+
+        # ── Recent comments
+        tk.Label(parent, text="RECENT COMMENTS", font=(FONT, 9, "bold"),
+                 bg=BG, fg=DIM).pack(anchor="w", pady=(0, 4))
+
+        comments_frame = tk.Frame(parent, bg=CARD)
+        comments_frame.pack(fill="x")
+
+        threading.Thread(target=self._load_comments, args=(comments_frame,), daemon=True).start()
+
+    def _api(self, path):
+        try:
+            req = urllib.request.Request(
+                f"http://localhost:3000{path}",
+                headers={"Cookie": self._session_cookie or ""})
+            with urllib.request.urlopen(req, timeout=5) as r:
+                return json.loads(r.read())
+        except: return []
+
+    def _load_users(self, frame):
+        users = self._api("/api/users")
+        def render():
+            for u in users[:10]:
+                row = tk.Frame(frame, bg=CARD)
+                row.pack(fill="x", padx=8, pady=2)
+                name = u.get("displayName") or u.get("email", "?")
+                role = u.get("role", "user")
+                color = YELLOW if role == "admin" else FG
+                tk.Label(row, text=name, font=(FONT, 10), bg=CARD,
+                         fg=color, anchor="w").pack(side="left", fill="x", expand=True)
+                tk.Label(row, text=role, font=(FONT, 8), bg=CARD,
+                         fg=DIM, anchor="e").pack(side="right")
+                tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", padx=8)
+        self.after(0, render)
+
+    def _load_comments(self, frame):
+        posts = self._api("/api/posts")
+        comments = []
+        for p in posts[:5]:
+            pid = p.get("id")
+            if pid:
+                c = self._api(f"/api/posts/{pid}/comments")
+                if isinstance(c, list):
+                    comments.extend(c)
+        def render():
+            for c in comments[:8]:
+                row = tk.Frame(frame, bg=CARD)
+                row.pack(fill="x", padx=8, pady=2)
+                author = c.get("authorName", "?")
+                text   = (c.get("content") or "")[:60]
+                tk.Label(row, text=f"{author}: {text}", font=(FONT, 9),
+                         bg=CARD, fg=FG, anchor="w").pack(side="left", fill="x", expand=True)
+                tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", padx=8)
+            if not comments:
+                tk.Label(frame, text="No comments found.", font=(FONT, 9),
+                         bg=CARD, fg=DIM).pack(padx=8, pady=8)
+        self.after(0, render)
 
     def _run(self, cmd, msg):
         def go():
@@ -295,6 +405,10 @@ class Dashboard(tk.Tk):
                   activebackground=CARD2, activeforeground=ACCENT,
                   relief="flat", cursor="hand2", bd=0,
                   command=self._hide).pack(side="right", padx=4)
+        tk.Button(topbar, text="↺", font=(FONT, 12), bg=CARD2, fg=DIM,
+                  activebackground=CARD2, activeforeground=ACCENT,
+                  relief="flat", cursor="hand2", bd=0,
+                  command=self._reload).pack(side="right", padx=4)
         tk.Button(topbar, text="⚙", font=(FONT, 12), bg=CARD2, fg=DIM,
                   activebackground=CARD2, activeforeground=ACCENT,
                   relief="flat", cursor="hand2", bd=0,
@@ -509,6 +623,9 @@ class Dashboard(tk.Tk):
     def _restart(self):     self._cmd("pm2 restart axrid-website")
     def _open_browser(self): self._cmd("DISPLAY=:0 chromium-browser --new-window https://axrid.com &")
     def _hide(self):        self.withdraw()
+    def _reload(self):
+        self._cmd("pkill -f axrid-dashboard.py")
+        self._cmd(f"DISPLAY=:0 nohup python3 {os.path.abspath(__file__)} &")
     def _show(self):
         sw = self.winfo_screenwidth(); sh = self.winfo_screenheight()
         self.geometry(f"{sw}x{sh}+0+0")
