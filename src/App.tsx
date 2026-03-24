@@ -5028,6 +5028,12 @@ const ServerStats = ({ user, isAdmin }: { user: LocalUser | null; isAdmin: boole
   );
 };
 
+// ── Admin live page — force hard navigation so Express serves the HTML ──────
+const AdminLive = () => {
+  useEffect(() => { window.location.replace("/admin"); }, []);
+  return null;
+};
+
 // ── Web Admin Dashboard (mirrors Pi dashboard) ────────────────────────────
 const WebDashboard = ({ user, isAdmin }: { user: LocalUser | null; isAdmin: boolean }) => {
   if (!user) return <Navigate to="/login" />;
@@ -6431,6 +6437,7 @@ function AppContent({ user, setUser, profile, setProfile, isAdmin, posts, tracks
               setLightboxImage={setLightboxImage}
             />
           } />
+          <Route path="/admin" element={<AdminLive />} />
           <Route path="/admin/panel" element={
             <AdminPanel
               user={user}
