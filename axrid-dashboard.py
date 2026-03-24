@@ -39,7 +39,7 @@ class Card(tk.Frame):
             hdr.pack(fill="x")
             if accent:
                 tk.Frame(hdr, bg=accent, width=3).pack(side="left", fill="y")
-            lbl(hdr, f"  {title}", size=7, bold=True, color=DIM,
+            lbl(hdr, f"  {title}", size=9, bold=True, color=DIM,
                 bg=CARD2).pack(side="left", pady=7)
             tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
         self.body = tk.Frame(self, bg=CARD)
@@ -49,8 +49,8 @@ class StatRow(tk.Frame):
     """Label + value + optional bar on one row."""
     def __init__(self, parent, title, color=FG, bar=False):
         super().__init__(parent, bg=CARD)
-        lbl(self, title, size=7, bold=True, color=DIM).pack(anchor="w")
-        self.val = tk.Label(self, text="—", font=(FONT, 13, "bold"),
+        lbl(self, title, size=9, bold=True, color=DIM).pack(anchor="w")
+        self.val = tk.Label(self, text="—", font=(FONT, 16, "bold"),
                             bg=CARD, fg=color, anchor="w")
         self.val.pack(anchor="w")
         self.bar = None
@@ -134,25 +134,25 @@ class Dashboard(tk.Tk):
         topbar = tk.Frame(self, bg=CARD2)
         topbar.pack(fill="x")
         tk.Frame(topbar, bg=BLUE, width=4).pack(side="left", fill="y")
-        tk.Label(topbar, text="AXRID", font=(FONT, 14, "bold"),
+        tk.Label(topbar, text="AXRID", font=(FONT, 17, "bold"),
                  bg=CARD2, fg=ACCENT).pack(side="left", padx=(10, 4), pady=8)
-        tk.Label(topbar, text="SERVER DASHBOARD", font=(FONT, 8),
+        tk.Label(topbar, text="SERVER DASHBOARD", font=(FONT, 10),
                  bg=CARD2, fg=DIM).pack(side="left", pady=8)
 
         # Status
         sf = tk.Frame(topbar, bg=CARD2)
         sf.pack(side="left", padx=20)
-        self.dot = tk.Label(sf, text="●", font=(FONT, 10), bg=CARD2, fg=GREEN)
+        self.dot = tk.Label(sf, text="●", font=(FONT, 12), bg=CARD2, fg=GREEN)
         self.dot.pack(side="left")
-        self.status_lbl = tk.Label(sf, text="ONLINE", font=(FONT, 8, "bold"),
+        self.status_lbl = tk.Label(sf, text="ONLINE", font=(FONT, 10, "bold"),
                                    bg=CARD2, fg=GREEN)
         self.status_lbl.pack(side="left", padx=4)
-        self.uptime_lbl = tk.Label(sf, text="", font=(FONT, 7),
+        self.uptime_lbl = tk.Label(sf, text="", font=(FONT, 9),
                                    bg=CARD2, fg=DIM)
         self.uptime_lbl.pack(side="left")
 
         # Right side of topbar
-        self.clock_lbl = tk.Label(topbar, text="", font=(FONT, 9, "bold"),
+        self.clock_lbl = tk.Label(topbar, text="", font=(FONT, 11, "bold"),
                                   bg=CARD2, fg=FG)
         self.clock_lbl.pack(side="right", padx=12)
         tk.Button(topbar, text="⊟", font=(FONT, 12), bg=CARD2, fg=DIM,
@@ -185,14 +185,14 @@ class Dashboard(tk.Tk):
         tk.Frame(foot, bg=BORDER, height=1).pack(fill="x")
         inner = tk.Frame(foot, bg=CARD2)
         inner.pack(fill="x", padx=12, pady=6)
-        self.deploy_lbl = tk.Label(inner, text="", font=(FONT, 7),
+        self.deploy_lbl = tk.Label(inner, text="", font=(FONT, 9),
                                    bg=CARD2, fg=DIM, anchor="w")
         self.deploy_lbl.pack(side="left")
         for txt, col, cmd in [
             ("⟳ RESTART", YELLOW, self._restart),
             ("⇗ OPEN SITE", BLUE,  self._open_browser),
         ]:
-            tk.Button(inner, text=txt, font=(FONT, 7, "bold"),
+            tk.Button(inner, text=txt, font=(FONT, 9, "bold"),
                       bg=DIM2, fg=col, activebackground=BORDER,
                       activeforeground=col, relief="flat",
                       cursor="hand2", command=cmd,
@@ -205,17 +205,17 @@ class Dashboard(tk.Tk):
         # Address card
         c = Card(col, "ADDRESS", accent=TEAL)
         c.pack(fill="x", pady=(0, 6))
-        lbl(c.body, "DOMAIN", size=6, bold=True, color=DIM).pack(anchor="w")
+        lbl(c.body, "DOMAIN", size=8, bold=True, color=DIM).pack(anchor="w")
         self.domain_lbl = tk.Label(c.body, text="axrid.com",
-                                   font=(FONT, 12, "bold"), bg=CARD, fg=GREEN)
+                                   font=(FONT, 15, "bold"), bg=CARD, fg=GREEN)
         self.domain_lbl.pack(anchor="w", pady=(0, 6))
-        lbl(c.body, "LOCAL", size=6, bold=True, color=DIM).pack(anchor="w")
+        lbl(c.body, "LOCAL", size=8, bold=True, color=DIM).pack(anchor="w")
         self.local_lbl = tk.Label(c.body, text="—",
-                                  font=(FONT, 9), bg=CARD, fg=BLUE)
+                                  font=(FONT, 11), bg=CARD, fg=BLUE)
         self.local_lbl.pack(anchor="w", pady=(0, 6))
-        lbl(c.body, "PUBLIC IP", size=6, bold=True, color=DIM).pack(anchor="w")
+        lbl(c.body, "PUBLIC IP", size=8, bold=True, color=DIM).pack(anchor="w")
         self.public_lbl = tk.Label(c.body, text="—",
-                                   font=(FONT, 9), bg=CARD, fg=TEAL)
+                                   font=(FONT, 11), bg=CARD, fg=TEAL)
         self.public_lbl.pack(anchor="w")
 
         # System card
@@ -245,8 +245,8 @@ class Dashboard(tk.Tk):
         def _num(parent, title, color, col):
             f = tk.Frame(parent, bg=CARD)
             f.grid(row=0, column=col, sticky="ew", padx=4)
-            lbl(f, title, size=6, bold=True, color=DIM).pack(anchor="w")
-            v = tk.Label(f, text="—", font=(FONT, 18, "bold"),
+            lbl(f, title, size=8, bold=True, color=DIM).pack(anchor="w")
+            v = tk.Label(f, text="—", font=(FONT, 21, "bold"),
                          bg=CARD, fg=color)
             v.pack(anchor="w")
             return v
@@ -258,7 +258,7 @@ class Dashboard(tk.Tk):
 
         # Sparkline
         tk.Frame(ct.body, bg=BORDER, height=1).pack(fill="x", pady=6)
-        lbl(ct.body, "REQUESTS PER MINUTE", size=6, bold=True,
+        lbl(ct.body, "REQUESTS PER MINUTE", size=8, bold=True,
             color=DIM).pack(anchor="w")
         self.spark = Sparkline(ct.body, color=GREEN)
         self.spark.pack(fill="x", pady=(4, 0))
@@ -273,15 +273,15 @@ class Dashboard(tk.Tk):
 
         bwf = tk.Frame(br, bg=CARD)
         bwf.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-        lbl(bwf, "BANDWIDTH TODAY", size=6, bold=True, color=DIM).pack(anchor="w")
-        self.bw_lbl = tk.Label(bwf, text="—", font=(FONT, 14, "bold"),
+        lbl(bwf, "BANDWIDTH TODAY", size=8, bold=True, color=DIM).pack(anchor="w")
+        self.bw_lbl = tk.Label(bwf, text="—", font=(FONT, 17, "bold"),
                                bg=CARD, fg=ORANGE)
         self.bw_lbl.pack(anchor="w")
 
         ttf = tk.Frame(br, bg=CARD)
         ttf.grid(row=0, column=1, sticky="ew")
-        lbl(ttf, "TOP TRACK TODAY", size=6, bold=True, color=DIM).pack(anchor="w")
-        self.top_lbl = tk.Label(ttf, text="—", font=(FONT, 10, "bold"),
+        lbl(ttf, "TOP TRACK TODAY", size=8, bold=True, color=DIM).pack(anchor="w")
+        self.top_lbl = tk.Label(ttf, text="—", font=(FONT, 12, "bold"),
                                 bg=CARD, fg=FG, wraplength=220, justify="left")
         self.top_lbl.pack(anchor="w")
 
@@ -292,13 +292,13 @@ class Dashboard(tk.Tk):
         for _ in range(5):
             rf = tk.Frame(cd.body, bg=CARD)
             rf.pack(fill="x", pady=1)
-            hash_lbl = tk.Label(rf, text="", font=("Courier", 7),
+            hash_lbl = tk.Label(rf, text="", font=("Courier", 9),
                                 bg=CARD, fg=DIM, width=7, anchor="w")
             hash_lbl.pack(side="left")
-            msg_lbl = tk.Label(rf, text="", font=(FONT, 8),
+            msg_lbl = tk.Label(rf, text="", font=(FONT, 10),
                                bg=CARD, fg=FG, anchor="w")
             msg_lbl.pack(side="left", fill="x", expand=True)
-            time_lbl = tk.Label(rf, text="", font=("Courier", 7),
+            time_lbl = tk.Label(rf, text="", font=("Courier", 9),
                                 bg=CARD, fg=DIM, anchor="e")
             time_lbl.pack(side="right")
             self.deploy_rows.append((rf, hash_lbl, msg_lbl, time_lbl))
@@ -314,8 +314,8 @@ class Dashboard(tk.Tk):
         def _item(title, color):
             f = tk.Frame(cs.body, bg=CARD)
             f.pack(fill="x", pady=3)
-            lbl(f, title, size=7, bold=True, color=DIM).pack(side="left")
-            v = tk.Label(f, text="—", font=(FONT, 11, "bold"),
+            lbl(f, title, size=9, bold=True, color=DIM).pack(side="left")
+            v = tk.Label(f, text="—", font=(FONT, 14, "bold"),
                          bg=CARD, fg=color)
             v.pack(side="right")
             tk.Frame(cs.body, bg=BORDER, height=1).pack(fill="x")
@@ -333,8 +333,8 @@ class Dashboard(tk.Tk):
         def _qitem(title, color):
             f = tk.Frame(cq.body, bg=CARD)
             f.pack(fill="x", pady=3)
-            lbl(f, title, size=7, bold=True, color=DIM).pack(side="left")
-            v = tk.Label(f, text="—", font=(FONT, 11, "bold"),
+            lbl(f, title, size=9, bold=True, color=DIM).pack(side="left")
+            v = tk.Label(f, text="—", font=(FONT, 14, "bold"),
                          bg=CARD, fg=color)
             v.pack(side="right")
             tk.Frame(cq.body, bg=BORDER, height=1).pack(fill="x")
@@ -351,10 +351,10 @@ class Dashboard(tk.Tk):
         for _ in range(5):
             lf = tk.Frame(cl.body, bg=CARD)
             lf.pack(fill="x", pady=1)
-            dot = tk.Label(lf, text="●", font=(FONT, 7),
+            dot = tk.Label(lf, text="●", font=(FONT, 9),
                            bg=CARD, fg=DIM)
             dot.pack(side="left", padx=(0, 6))
-            txt = tk.Label(lf, text="", font=("Courier", 8),
+            txt = tk.Label(lf, text="", font=("Courier", 10),
                            bg=CARD, fg=DIM, anchor="w")
             txt.pack(side="left", fill="x")
             self.log_labels.append((dot, txt))
