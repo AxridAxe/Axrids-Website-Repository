@@ -5046,7 +5046,7 @@ const WebDashboard = ({ user, isAdmin }: { user: LocalUser | null; isAdmin: bool
       .then(r => r.ok ? r.json() : null)
       .then(d => d && setStats(d));
 
-  useEffect(() => { fetchStats(); const iv = setInterval(fetchStats, 5000); return () => clearInterval(iv); }, []);
+  useEffect(() => { fetchStats(); const iv = setInterval(fetchStats, 1000); return () => clearInterval(iv); }, []);
 
   useEffect(() => {
     if (!stats) return;
