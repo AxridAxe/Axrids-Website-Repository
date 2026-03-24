@@ -259,7 +259,7 @@ class Dashboard(tk.Tk):
         self._cmd("pm2 restart axrid-website")
 
     def _open_browser(self):
-        self._cmd("xdg-open https://axrid.com")
+        self._cmd("DISPLAY=:0 chromium-browser --new-window https://axrid.com &")
 
     def _hide(self):
         self.withdraw()
