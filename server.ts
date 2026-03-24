@@ -956,6 +956,10 @@ canvas{width:100%;height:44px;display:block}
   <span class="stxt green" id="status">ONLINE</span>
   <span class="upt" id="uptime"></span>
   <span class="clk" id="clock"></span>
+  <a href="https://axrid.com" target="_blank" style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#2979ff;text-decoration:none;background:#1c1c1c;padding:4px 10px;margin-left:10px">⇗ Site</a>
+  <button onclick="location.reload()" style="font-size:14px;background:none;border:none;color:#333;cursor:pointer;padding:0 6px" title="Reload">↺</button>
+  <a href="/admin/panel" style="font-size:14px;color:#333;text-decoration:none;padding:0 6px" title="Admin Panel">⚙</a>
+  <a href="/" style="font-size:14px;color:#333;text-decoration:none;padding:0 6px" title="Home">⌂</a>
 </div>
 
 <div id="body">
