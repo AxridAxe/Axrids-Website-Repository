@@ -1002,8 +1002,8 @@ const FeaturesSection = ({ noTransition }: { noTransition?: boolean }) => {
       tag: "Storage"
     },
     {
-      title: "Google Safety",
-      description: "Enterprise-grade security powered by Google Authentication and Firebase protection.",
+      title: "Secure",
+      description: "Secure authentication with encrypted passwords and session management.",
       icon: <ShieldCheck className="w-6 h-6" />,
       tag: "Security"
     }
@@ -4278,7 +4278,7 @@ const FeaturesOld = () => {
   const techStack = [
     { name: "React", icon: <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">⚛️</div>, description: "Modern UI library" },
     { name: "TypeScript", icon: <div className="w-5 h-5 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400">TS</div>, description: "Type-safe code" },
-    { name: "Firebase", icon: <div className="w-5 h-5 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400">🔥</div>, description: "Real-time backend" },
+    { name: "SQLite", icon: <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">🗄</div>, description: "Local database" },
     { name: "Tailwind", icon: <div className="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400">🌊</div>, description: "Utility-first CSS" },
     { name: "Motion", icon: <div className="w-5 h-5 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400">✨</div>, description: "Smooth animations" }
   ];
@@ -4333,8 +4333,8 @@ const FeaturesOld = () => {
       tag: "Storage"
     },
     {
-      title: "Google Safety",
-      description: "Enterprise-grade security powered by Google Authentication and Firebase protection.",
+      title: "Secure",
+      description: "Secure authentication with encrypted passwords and session management.",
       icon: <ShieldCheck className="w-6 h-6" />,
       tag: "Security"
     }
