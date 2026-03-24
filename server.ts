@@ -1142,6 +1142,7 @@ setInterval(() => {
 
 poll();
 setInterval(poll, 3000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
 </script>
 </body></html>`);
   });
