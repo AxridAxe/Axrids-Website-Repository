@@ -128,7 +128,7 @@ class SettingsOverlay(tk.Toplevel):
         self.after(100, self.focus_force)
 
     def _build(self):
-        self._show_pin()
+        self._show_settings()
 
     def _close_btn(self):
         tk.Button(self, text="✕", font=(FONT, 14), bg=BG, fg=DIM,
