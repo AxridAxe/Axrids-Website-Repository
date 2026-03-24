@@ -118,9 +118,11 @@ class SettingsOverlay(tk.Toplevel):
         self.geometry(f"{sw}x{sh}+0+0")
         self.configure(bg=BG)
         self.lift()
+        self.grab_set()
         self.focus_force()
         self._session_cookie = None
         self._build()
+        self.after(100, self.focus_force)
 
     def _build(self):
         # Full-screen dark overlay
@@ -152,7 +154,7 @@ class SettingsOverlay(tk.Toplevel):
                                insertbackground=ACCENT, relief="flat",
                                width=28, bd=4)
         email_entry.pack(anchor="w", pady=(2, 12))
-        email_entry.focus_set()
+        self.after(200, email_entry.focus_set)
 
         # Password
         tk.Label(card, text="PASSWORD", font=(FONT, 8, "bold"),
