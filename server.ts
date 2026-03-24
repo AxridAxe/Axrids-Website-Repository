@@ -879,7 +879,12 @@ async function startServer() {
 
   // =========================================================================
   // ── Live dashboard HTML page ─────────────────────────────────────────────
-  app.get("/admin", isAdmin, (_req, res) => {
+  app.get("/admin", (req, res, next) => {
+    if (!req.isAuthenticated() || req.user?.role !== "admin") {
+      return res.redirect("/login");
+    }
+    next();
+  }, (_req, res) => {
     res.setHeader("Content-Type", "text/html");
     res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
