@@ -878,6 +878,274 @@ async function startServer() {
   });
 
   // =========================================================================
+  // ── Live dashboard HTML page ─────────────────────────────────────────────
+  app.get("/live", isAdmin, (_req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    res.send(`<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Axrid Live Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080808;color:#aaa;font-family:Helvetica,Arial,sans-serif;font-size:13px;overflow-x:hidden}
+.topbar{background:#131313;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid #1a1a1a;height:46px}
+.topbar .accent-bar{width:4px;height:100%;background:#2979ff;flex-shrink:0}
+.topbar .title{font-size:20px;font-weight:bold;color:#fff;letter-spacing:-0.5px}
+.topbar .sub{font-size:12px;color:#333;font-weight:bold;text-transform:uppercase;letter-spacing:2px}
+.topbar .status-dot{font-size:12px}.topbar .status-txt{font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px}
+.topbar .uptime{font-size:9px;color:#333;margin-left:4px}
+.topbar .clock{font-size:11px;font-weight:bold;color:#aaa;margin-left:auto;font-family:monospace}
+.body{display:grid;grid-template-columns:1fr 2fr 1fr;gap:8px;padding:8px 10px;height:calc(100vh - 46px - 40px - 40px);overflow:hidden}
+.col{display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.card{background:#0e0e0e;border:1px solid #1a1a1a;flex-shrink:0}
+.card-hdr{background:#131313;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;padding:6px 12px;gap:6px}
+.card-hdr .bar{width:3px;height:14px;flex-shrink:0}
+.card-hdr span{font-size:10px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:2px}
+.card-body{padding:10px 12px}
+.lbl{font-size:9px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:1px;margin-bottom:1px}
+.val{font-size:15px;font-weight:bold;margin-bottom:6px}
+.val.big{font-size:22px}
+.val.sm{font-size:12px}
+.row-bar{width:100%;height:4px;background:#1c1c1c;border-radius:2px;margin-top:3px;margin-bottom:8px}
+.row-bar-fill{height:100%;border-radius:2px;transition:width .4s}
+.nums-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px}
+.num-cell .lbl{margin-bottom:2px}
+canvas{width:100%;height:50px;display:block}
+.divider{height:1px;background:#1a1a1a;margin:6px 0}
+.two-col{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+.item-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a1a}
+.item-row:last-child{border-bottom:none}
+.item-row .k{font-size:11px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:1px}
+.item-row .v{font-size:15px;font-weight:bold}
+.deploy-row{display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #1a1a1a;overflow:hidden}
+.deploy-row:last-child{border:none}
+.deploy-row .hash{font-family:monospace;font-size:9px;color:#333;flex-shrink:0;width:50px}
+.deploy-row .msg{font-size:10px;color:#aaa;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deploy-row .time{font-family:monospace;font-size:8px;color:#333;flex-shrink:0}
+.log-card{background:#0e0e0e;border:1px solid #1a1a1a;padding:0 10px}
+.log-row{display:flex;align-items:center;gap:10px;padding:3px 0;border-bottom:1px solid #111;font-family:monospace;font-size:10px;color:#555}
+.log-row:last-child{border:none}
+.log-row .dot{font-size:9px;flex-shrink:0}
+.log-row .ts{flex-shrink:0;width:130px}
+.log-row .req{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log-row .st{flex-shrink:0;width:36px;text-align:right}
+.footer{background:#131313;border-top:1px solid #1a1a1a;display:flex;align-items:center;padding:0 14px;height:40px}
+.footer .deploy-txt{font-size:9px;color:#333}
+.footer a{margin-left:auto;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#2979ff;text-decoration:none;background:#1c1c1c;padding:5px 12px}
+.green{color:#00e676}.blue{color:#2979ff}.yellow{color:#ffd600}.red{color:#ff1744}.purple{color:#d500f9}.teal{color:#00bcd4}.orange{color:#ff6d00}.white{color:#fff}.dim{color:#333}
+</style>
+</head><body>
+<div class="topbar">
+  <div class="accent-bar"></div>
+  <span class="title">AXRID</span>
+  <span class="sub">Server Dashboard</span>
+  <span class="status-dot green" id="dot">●</span>
+  <span class="status-txt green" id="status">ONLINE</span>
+  <span class="uptime" id="uptime"></span>
+  <span class="clock" id="clock"></span>
+</div>
+
+<div class="body">
+  <!-- LEFT -->
+  <div class="col">
+    <div class="card">
+      <div class="card-hdr"><div class="bar" style="background:#00bcd4"></div><span>Address</span></div>
+      <div class="card-body">
+        <div class="lbl">Domain</div><div class="val green">axrid.com</div>
+        <div class="lbl">Local</div><div class="val blue sm" id="localIp">—</div>
+        <div class="lbl">Public IP</div><div class="val teal sm" id="publicIp">—</div>
+      </div>
+    </div>
+    <div class="card" style="flex:1">
+      <div class="card-hdr"><div class="bar" style="background:#d500f9"></div><span>System</span></div>
+      <div class="card-body">
+        <div class="lbl">CPU</div>
+        <div class="val blue" id="cpu">—</div>
+        <div class="row-bar"><div class="row-bar-fill blue" id="cpu-bar" style="width:0%"></div></div>
+        <div class="lbl">Memory</div>
+        <div class="val purple" id="mem">—</div>
+        <div class="row-bar"><div class="row-bar-fill" id="mem-bar" style="width:0%;background:#d500f9"></div></div>
+        <div class="lbl">Disk</div>
+        <div class="val teal" id="disk">—</div>
+        <div class="row-bar"><div class="row-bar-fill" id="disk-bar" style="width:0%;background:#00bcd4"></div></div>
+        <div class="lbl">Temperature</div>
+        <div class="val yellow" id="temp">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="col">
+    <div class="card">
+      <div class="card-hdr"><div class="bar" style="background:#00e676"></div><span>Live Traffic</span></div>
+      <div class="card-body">
+        <div class="nums-grid">
+          <div class="num-cell"><div class="lbl">Req / Min</div><div class="val big green" id="rpm">—</div></div>
+          <div class="num-cell"><div class="lbl">Visitors Today</div><div class="val big blue" id="visitors">—</div></div>
+          <div class="num-cell"><div class="lbl">Requests Today</div><div class="val big white" id="reqtoday">—</div></div>
+          <div class="num-cell"><div class="lbl">Active Conns</div><div class="val big teal" id="conns">—</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="lbl" style="margin-bottom:4px">Requests Per Minute</div>
+        <canvas id="spark"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="bar" style="background:#ff6d00"></div><span>Transfer &amp; Top Track</span></div>
+      <div class="card-body two-col">
+        <div><div class="lbl">Bandwidth Today</div><div class="val orange" id="bw">—</div></div>
+        <div><div class="lbl">Top Track Today</div><div class="val white sm" id="top" style="font-size:12px;word-break:break-all">—</div></div>
+      </div>
+    </div>
+    <div class="card" style="flex:1">
+      <div class="card-hdr"><div class="bar" style="background:#333"></div><span>Recent Deploys</span></div>
+      <div class="card-body" id="deploys"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="col">
+    <div class="card">
+      <div class="card-hdr"><div class="bar" style="background:#2979ff"></div><span>Site Content</span></div>
+      <div class="card-body">
+        <div class="item-row"><span class="k">Tracks</span><span class="v white" id="tracks">—</span></div>
+        <div class="item-row"><span class="k">Users</span><span class="v white" id="users">—</span></div>
+        <div class="item-row"><span class="k">Albums</span><span class="v white" id="albums">—</span></div>
+        <div class="item-row"><span class="k">Posts</span><span class="v white" id="posts">—</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="bar" style="background:#ffd600"></div><span>Today at a Glance</span></div>
+      <div class="card-body">
+        <div class="item-row"><span class="k">Unique Visitors</span><span class="v green" id="unique">—</span></div>
+        <div class="item-row"><span class="k">Track Plays</span><span class="v blue" id="plays">—</span></div>
+        <div class="item-row"><span class="k">Errors 4xx/5xx</span><span class="v red" id="errors">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="log-card">
+  <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#131313;border-bottom:1px solid #1a1a1a">
+    <div style="width:3px;height:14px;background:#333"></div>
+    <span style="font-size:10px;font-weight:bold;color:#333;text-transform:uppercase;letter-spacing:2px">Live Activity Log</span>
+  </div>
+  <div id="log" style="padding:0 12px"></div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span class="deploy-txt" id="last-deploy"></span>
+  <a href="https://axrid.com" target="_blank">⇗ Open Site</a>
+</div>
+
+<script>
+const sparkData = new Array(60).fill(0);
+let canvas, ctx;
+
+function bar(id, pct) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const c = pct > 80 ? '#ff1744' : pct > 60 ? '#ffd600' : el.style.background || '#aaa';
+  el.style.width = Math.min(pct,100) + '%';
+  el.style.background = c;
+}
+
+function drawSpark() {
+  if (!canvas) { canvas = document.getElementById('spark'); ctx = canvas.getContext('2d'); }
+  const W = canvas.offsetWidth; const H = 50;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0,0,W,H);
+  const mx = Math.max(...sparkData) || 1;
+  ctx.beginPath();
+  sparkData.forEach((v,i) => {
+    const x = i * W / (sparkData.length-1);
+    const y = H - (v/mx)*(H-4) - 2;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='#00e676'; ctx.lineWidth=2; ctx.stroke();
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+  ctx.fillStyle='rgba(0,230,118,0.1)'; ctx.fill();
+}
+
+function set(id, val) { const e=document.getElementById(id); if(e&&e.textContent!==String(val??'—')) e.textContent=val??'—'; }
+
+async function poll() {
+  try {
+    const d = await fetch('/api/stats',{credentials:'include'}).then(r=>r.json());
+    const s = d.system; const t = d.traffic; const sv = d.server;
+
+    // topbar
+    const on = sv?.online;
+    document.getElementById('dot').className = 'status-dot ' + (on?'green':'red');
+    document.getElementById('status').textContent = on ? 'ONLINE' : 'OFFLINE';
+    document.getElementById('status').className = 'status-txt ' + (on?'green':'red');
+    set('uptime', sv?.pm2Uptime ? 'uptime: ' + sv.pm2Uptime : '');
+
+    // address
+    set('localIp', sv?.localIp ? 'http://' + sv.localIp + ':3000' : '—');
+    set('publicIp', sv?.publicIp || '—');
+
+    // system
+    set('cpu', s.cpu + '%'); bar('cpu-bar', s.cpu);
+    set('mem', s.memory.used + ' / ' + s.memory.total); bar('mem-bar', s.memory.pct);
+    set('disk', s.disk.pct + '%  ' + s.disk.used + ' / ' + s.disk.total); bar('disk-bar', s.disk.pct);
+    set('temp', s.temp || 'N/A');
+
+    // traffic
+    set('rpm', t.rpm ?? '—');
+    set('visitors', t.uniqueVisitors);
+    set('reqtoday', t.requestsToday);
+    set('conns', t.activeConns ?? 0);
+    sparkData.push(t.rpm ?? 0); sparkData.shift(); drawSpark();
+
+    // transfer
+    set('bw', t.bandwidth);
+    set('top', t.topTrack || '—');
+
+    // site content
+    set('tracks', d.counts.tracks); set('users', d.counts.users);
+    set('albums', d.counts.albums); set('posts', d.counts.posts);
+
+    // today at a glance
+    set('unique', t.uniqueVisitors); set('plays', t.mp3Plays); set('errors', t.errors4xx5xx);
+
+    // deploys
+    const dep = document.getElementById('deploys');
+    if (dep && d.deploys?.length) {
+      dep.innerHTML = d.deploys.slice(0,5).map(x =>
+        '<div class="deploy-row"><span class="hash">' + x.hash + '</span>' +
+        '<span class="msg">' + x.subject + '</span>' +
+        '<span class="time">' + x.relTime + '</span></div>'
+      ).join('');
+      set('last-deploy', 'Last deploy: ' + d.deploys[0].subject + '  ·  ' + d.deploys[0].relTime);
+    }
+
+    // log
+    const log = document.getElementById('log');
+    if (log && d.recentRequests?.length) {
+      log.innerHTML = d.recentRequests.map(r => {
+        const c = r.status?.startsWith('2') ? 'green' : r.status?.startsWith('3') ? 'yellow' : 'red';
+        return '<div class="log-row"><span class="dot ' + c + '">●</span><span class="ts">' +
+          r.ts + '</span><span class="req">' + r.req + '</span><span class="st ' + c + '">' + r.status + '</span></div>';
+      }).join('');
+    }
+  } catch(e) { console.error(e); }
+}
+
+// clock
+setInterval(() => {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString() + '   ' + now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}, 1000);
+
+poll();
+setInterval(poll, 3000);
+</script>
+</body></html>`);
+  });
+
   // SERVER STATS  (admin only)
   // =========================================================================
 
@@ -951,6 +1219,21 @@ async function startServer() {
     const pm2Parts = pm2Raw.split(/\s+/);
     const pm2Uptime = pm2Up && pm2Parts.length > 13 ? pm2Parts[13] : null;
 
+    // ── Network / address ────────────────────────────────────────────────────
+    const localIp  = sh("hostname -I 2>/dev/null | awk '{print $1}'") || null;
+    const publicIp = sh("curl -s --max-time 3 ifconfig.me 2>/dev/null") || null;
+    const activeConnsRaw = sh("ss -tn state established '( dport = :80 or dport = :3000 )' 2>/dev/null | wc -l");
+    const activeConns = Math.max(0, (parseInt(activeConnsRaw) || 1) - 1);
+
+    // ── Req/min (lines from current minute in nginx log) ─────────────────────
+    const nowH = new Date().getHours().toString().padStart(2, "0");
+    const nowM = new Date().getMinutes().toString().padStart(2, "0");
+    const rpm = parseInt(sh(`grep "${today}" ${log} 2>/dev/null | grep ":${nowH}:${nowM}:" | wc -l`) || "0");
+
+    // ── Top track today ───────────────────────────────────────────────────────
+    const topTrackRaw = sh(`grep "${today}" ${log} 2>/dev/null | grep 'uploads.*\\.mp3' | awk '{print $7}' | sort | uniq -c | sort -rn | head -1 | awk '{print $2}' | sed 's|/uploads/||' | sed 's|\\.mp3||'`);
+    const topTrack = topTrackRaw || null;
+
     // ── Recent nginx log entries ─────────────────────────────────────────────
     const recentRaw = sh(`tail -8 ${log} 2>/dev/null`);
     const recentRequests = recentRaw.split("\n").filter(Boolean).map(line => {
@@ -965,9 +1248,9 @@ async function startServer() {
     res.json({
       system: { uptime, memory, cpu, disk, temp },
       counts,
-      traffic: { requestsToday, uniqueVisitors, errors4xx5xx, mp3Plays, bandwidth },
+      traffic: { requestsToday, uniqueVisitors, errors4xx5xx, mp3Plays, bandwidth, rpm, activeConns, topTrack },
       deploys,
-      server: { online: pm2Up, pm2Uptime },
+      server: { online: pm2Up, pm2Uptime, localIp, publicIp },
       recentRequests,
     });
   });
