@@ -6431,7 +6431,6 @@ function AppContent({ user, setUser, profile, setProfile, isAdmin, posts, tracks
               setLightboxImage={setLightboxImage}
             />
           } />
-          <Route path="/admin" element={<WebDashboard user={user} isAdmin={isAdmin} />} />
           <Route path="/admin/panel" element={
             <AdminPanel
               user={user}

@@ -879,7 +879,7 @@ async function startServer() {
 
   // =========================================================================
   // ── Live dashboard HTML page ─────────────────────────────────────────────
-  app.get("/live", isAdmin, (_req, res) => {
+  app.get("/admin", isAdmin, (_req, res) => {
     res.setHeader("Content-Type", "text/html");
     res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
