@@ -6386,6 +6386,14 @@ export default function App() {
     if (pendingTheme) {
       setTheme(pendingTheme);
       if (profile) setProfile({ ...profile, theme: pendingTheme });
+      if (user) {
+        fetch(`/api/users/${user.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ theme: pendingTheme }),
+        }).catch(console.error);
+      }
     }
     setShowThemePrompt(false);
   };
@@ -6403,6 +6411,20 @@ export default function App() {
       setTheme(profile.theme);
     }
   }, [profile]);
+
+  // Poll /api/auth/me every 5s to pick up server-side theme changes
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      fetch("/api/auth/me", { credentials: "include" })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.user?.theme) setTheme(data.user.theme);
+        })
+        .catch(console.error);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;

@@ -45,6 +45,7 @@ declare global {
       role: "admin" | "user";
       photoURL: string | null;
       passwordHash: string;
+      theme: "light" | "dark";
     }
   }
 }
@@ -257,7 +258,7 @@ async function startServer() {
   // GET /api/users  – public, returns minimal profile data for all users
   app.get("/api/users", (_req, res) => {
     const users = db
-      .prepare("SELECT id, email, displayName, alias, role, photoURL FROM users")
+      .prepare("SELECT id, email, displayName, alias, role, photoURL, theme FROM users")
       .all();
     res.json(users);
   });
@@ -265,7 +266,7 @@ async function startServer() {
   // GET /api/users/:id
   app.get("/api/users/:id", (req, res) => {
     const user = db
-      .prepare("SELECT id, email, displayName, alias, role, photoURL FROM users WHERE id = ?")
+      .prepare("SELECT id, email, displayName, alias, role, photoURL, theme FROM users WHERE id = ?")
       .get(req.params.id);
     if (!user) return res.status(404).json({ error: "User not found." });
     res.json(user);
@@ -283,12 +284,13 @@ async function startServer() {
       `UPDATE users
           SET displayName = COALESCE(?, displayName),
               alias       = COALESCE(?, alias),
-              photoURL    = COALESCE(?, photoURL)
+              photoURL    = COALESCE(?, photoURL),
+              theme       = COALESCE(?, theme)
         WHERE id = ?`
-    ).run(displayName ?? null, alias ?? null, photoURL ?? null, id);
+    ).run(displayName ?? null, alias ?? null, photoURL ?? null, theme ?? null, id);
 
     const updated = db
-      .prepare("SELECT id, email, displayName, alias, role, photoURL FROM users WHERE id = ?")
+      .prepare("SELECT id, email, displayName, alias, role, photoURL, theme FROM users WHERE id = ?")
       .get(id);
     res.json(updated);
   });
