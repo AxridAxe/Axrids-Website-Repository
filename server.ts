@@ -1168,14 +1168,16 @@ setInterval(poll, 3000);
     const fmt = (b: number) => b > 1e9 ? `${(b/1e9).toFixed(1)} GB` : `${(b/1e6).toFixed(0)} MB`;
     const memory = { used: fmt(usedMem), total: fmt(totalMem), pct: memPct };
 
-    const cpuRaw = sh("top -bn1 | grep 'Cpu(s)'");
+    // Read CPU from /proc/stat — take two snapshots 200ms apart for accuracy
     let cpu = 0;
     try {
-      const parts = cpuRaw.split(/[\s,%]+/);
-      // "Cpu(s): 2.3 us, 1.2 sy ..." — user + sys
-      const us = parseFloat(parts[1] || "0");
-      const sy = parseFloat(parts[3] || "0");
-      cpu = Math.round(us + sy);
+      const s1 = sh("cat /proc/stat | grep '^cpu '").split(/\s+/).slice(1).map(Number);
+      const idle1 = s1[3]; const total1 = s1.reduce((a,b)=>a+b,0);
+      execSync("sleep 0.2");
+      const s2 = sh("cat /proc/stat | grep '^cpu '").split(/\s+/).slice(1).map(Number);
+      const idle2 = s2[3]; const total2 = s2.reduce((a,b)=>a+b,0);
+      const dIdle = idle2 - idle1; const dTotal = total2 - total1;
+      cpu = Math.round((1 - dIdle / dTotal) * 100);
     } catch { cpu = 0; }
 
     const diskRaw = sh("df / | tail -1").split(/\s+/);
