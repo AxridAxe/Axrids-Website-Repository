@@ -5,6 +5,7 @@ import glob
 import threading
 import time
 import os
+import signal
 
 # ── Palette ───────────────────────────────────────────────────────────────────
 BG      = "#080808"
@@ -90,6 +91,8 @@ class Dashboard(tk.Tk):
         sw = self.winfo_screenwidth()
         sh = self.winfo_screenheight()
         self.geometry(f"{sw}x{sh}+0+0")
+        # Handle SIGUSR1 to restore window from desktop
+        signal.signal(signal.SIGUSR1, lambda s, f: self.after(0, self._show))
         self._build()
         self._schedule()
 
@@ -142,6 +145,11 @@ class Dashboard(tk.Tk):
                   bg=CARD, fg=BLUE, activebackground=DIM2,
                   activeforeground=BLUE, relief="flat", cursor="hand2",
                   command=self._open_browser, padx=14, pady=10,
+                  bd=0).pack(fill="x", pady=(0, 4))
+        tk.Button(ctrl, text="⊟  DESKTOP", font=("Helvetica", 8, "bold"),
+                  bg=CARD, fg=DIM, activebackground=DIM2,
+                  activeforeground=ACCENT, relief="flat", cursor="hand2",
+                  command=self._hide, padx=14, pady=10,
                   bd=0).pack(fill="x")
 
         # ── Addresses
@@ -252,6 +260,16 @@ class Dashboard(tk.Tk):
 
     def _open_browser(self):
         self._cmd("xdg-open https://axrid.com")
+
+    def _hide(self):
+        self.withdraw()
+
+    def _show(self):
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        self.geometry(f"{sw}x{sh}+0+0")
+        self.deiconify()
+        self.lift()
 
     # ── Data fetch ────────────────────────────────────────────────────────────
     def _fetch(self):
