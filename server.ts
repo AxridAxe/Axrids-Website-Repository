@@ -11,6 +11,8 @@ import rateLimit from "express-rate-limit";
 import crypto from "crypto";
 import multer from "multer";
 import fs from "fs";
+import { execSync } from "child_process";
+import os from "os";
 import db from "./src/database.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -873,6 +875,89 @@ async function startServer() {
   app.delete("/api/changelog/:id", isAdmin, (req, res) => {
     db.prepare("DELETE FROM changelog_entries WHERE id = ?").run(req.params.id);
     res.json({ ok: true });
+  });
+
+  // =========================================================================
+  // SERVER STATS  (admin only)
+  // =========================================================================
+
+  app.get("/api/stats", isAdmin, (_req, res) => {
+    function sh(cmd: string): string {
+      try { return execSync(cmd, { stdio: ["pipe", "pipe", "pipe"] }).toString().trim(); }
+      catch { return ""; }
+    }
+
+    // ── System ──────────────────────────────────────────────────────────────
+    const uptimeSecs = os.uptime();
+    const h = Math.floor(uptimeSecs / 3600);
+    const m = Math.floor((uptimeSecs % 3600) / 60);
+    const uptime = `${h}h ${m}m`;
+
+    const totalMem = os.totalmem();
+    const freeMem  = os.freemem();
+    const usedMem  = totalMem - freeMem;
+    const memPct   = Math.round(usedMem / totalMem * 100);
+    const fmt = (b: number) => b > 1e9 ? `${(b/1e9).toFixed(1)} GB` : `${(b/1e6).toFixed(0)} MB`;
+    const memory = { used: fmt(usedMem), total: fmt(totalMem), pct: memPct };
+
+    const cpuRaw = sh("top -bn1 | grep 'Cpu(s)'");
+    let cpu = 0;
+    try {
+      const parts = cpuRaw.split(/[\s,%]+/);
+      // "Cpu(s): 2.3 us, 1.2 sy ..." — user + sys
+      const us = parseFloat(parts[1] || "0");
+      const sy = parseFloat(parts[3] || "0");
+      cpu = Math.round(us + sy);
+    } catch { cpu = 0; }
+
+    const diskRaw = sh("df / | tail -1").split(/\s+/);
+    const disk = {
+      pct: parseInt(diskRaw[4] ?? "0"),
+      used: diskRaw[2] ? `${Math.round(parseInt(diskRaw[2]) / 1024 / 1024)}G` : "?",
+      total: diskRaw[1] ? `${Math.round(parseInt(diskRaw[1]) / 1024 / 1024)}G` : "?",
+    };
+
+    const temp = sh("vcgencmd measure_temp 2>/dev/null | cut -d= -f2") || null;
+
+    // ── DB counts ────────────────────────────────────────────────────────────
+    const counts = {
+      tracks:  (db.prepare("SELECT COUNT(*) as n FROM tracks").get() as any).n,
+      users:   (db.prepare("SELECT COUNT(*) as n FROM users").get() as any).n,
+      albums:  (db.prepare("SELECT COUNT(*) as n FROM albums").get() as any).n,
+      posts:   (db.prepare("SELECT COUNT(*) as n FROM posts").get() as any).n,
+    };
+
+    // ── Nginx log (today) ────────────────────────────────────────────────────
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "/");
+    const log = "/var/log/nginx/access.log";
+    const requestsToday  = parseInt(sh(`grep "${today}" ${log} 2>/dev/null | wc -l`) || "0");
+    const uniqueVisitors = parseInt(sh(`grep "${today}" ${log} 2>/dev/null | awk '{print $1}' | sort -u | wc -l`) || "0");
+    const errors4xx5xx   = parseInt(sh(`grep "${today}" ${log} 2>/dev/null | awk '$9~/^[45]/' | wc -l`) || "0");
+    const mp3Plays       = parseInt(sh(`grep "${today}" ${log} 2>/dev/null | grep -c 'uploads.*\\.mp3'`) || "0");
+    const bwBytes        = parseInt(sh(`grep "${today}" ${log} 2>/dev/null | awk '{sum+=$10} END{print sum+0}'`) || "0");
+    const bandwidth      = bwBytes > 1e9 ? `${(bwBytes/1e9).toFixed(2)} GB` : bwBytes > 1e6 ? `${(bwBytes/1e6).toFixed(1)} MB` : `${(bwBytes/1e3).toFixed(0)} KB`;
+
+    // ── Recent deploys (git log) ─────────────────────────────────────────────
+    const gitDir = "/home/Axrid/Axrids-Website-Repository";
+    const rawLog = sh(`git -C ${gitDir} log -20 --pretty="%H|%s|%ar|%ad|%an" --date=short 2>/dev/null`);
+    const deploys = rawLog.split("\n").filter(Boolean).map(line => {
+      const [hash, subject, relTime, date, author] = line.split("|");
+      return { hash: hash?.slice(0, 7), subject, relTime, date, author };
+    });
+
+    // ── PM2 status ───────────────────────────────────────────────────────────
+    const pm2Raw  = sh("pm2 list 2>/dev/null | grep axrid-website");
+    const pm2Up   = pm2Raw.includes("online");
+    const pm2Parts = pm2Raw.split(/\s+/);
+    const pm2Uptime = pm2Up && pm2Parts.length > 13 ? pm2Parts[13] : null;
+
+    res.json({
+      system: { uptime, memory, cpu, disk, temp },
+      counts,
+      traffic: { requestsToday, uniqueVisitors, errors4xx5xx, mp3Plays, bandwidth },
+      deploys,
+      server: { online: pm2Up, pm2Uptime },
+    });
   });
 
   // =========================================================================

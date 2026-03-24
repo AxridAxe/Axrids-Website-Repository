@@ -4869,6 +4869,165 @@ const MassUpload = ({ handleUploadTrack, showNotification }: any) => {
   );
 };
 
+// ── Server Stats Page ──────────────────────────────────────────────────────
+const ServerStats = ({ user, isAdmin }: { user: LocalUser | null; isAdmin: boolean }) => {
+  if (!user) return <Navigate to="/login" />;
+  if (!isAdmin) return <Navigate to="/" />;
+
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showAllDeploys, setShowAllDeploys] = useState(false);
+  const navigate = useNavigate();
+
+  const fetchStats = () => {
+    fetch("/api/stats", { credentials: "include" })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(d => { setStats(d); setLoading(false); })
+      .catch(() => { setError("Failed to load stats."); setLoading(false); });
+  };
+
+  useEffect(() => {
+    fetchStats();
+    const iv = setInterval(fetchStats, 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const Bar = ({ pct, color = "bg-paper" }: { pct: number; color?: string }) => (
+    <div className="w-full h-0.5 bg-line/30 rounded-full mt-1">
+      <div className={`h-full rounded-full transition-all ${pct > 80 ? "bg-red-500" : pct > 60 ? "bg-yellow-500" : color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+    </div>
+  );
+
+  const Row = ({ label, value, mono = true }: { label: string; value: string | number; mono?: boolean }) => (
+    <div className="flex justify-between items-center py-2 border-b border-line/20 last:border-0">
+      <span className="text-[10px] font-bold opacity-40 uppercase tracking-wider">{label}</span>
+      <span className={`text-[11px] font-bold ${mono ? "font-mono" : ""}`}>{value}</span>
+    </div>
+  );
+
+  const deploys = stats?.deploys ?? [];
+  const visibleDeploys = showAllDeploys ? deploys : deploys.slice(0, 5);
+
+  return (
+    <div className="min-h-screen pt-24 pb-16 px-4 md:px-8 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-10">
+        <div>
+          <button onClick={() => navigate("/admin")} className="text-[9px] uppercase tracking-widest font-bold opacity-30 hover:opacity-60 transition-opacity mb-2 block">← Admin</button>
+          <h1 className="text-3xl font-bold tracking-tighter">Server Stats</h1>
+          <p className="text-[11px] opacity-40 mt-1">Live infrastructure overview · refreshes every 30s</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${stats?.server?.online ? "bg-emerald-400" : "bg-red-500"}`} />
+          <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">
+            {stats?.server?.online ? "Online" : "Offline"}
+          </span>
+        </div>
+      </div>
+
+      {loading && <div className="text-[11px] opacity-40 text-center py-20">Loading…</div>}
+      {error && <div className="text-[11px] text-red-400 text-center py-20">{error}</div>}
+
+      {stats && (
+        <div className="space-y-6">
+          {/* Top row: traffic counts */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { label: "Requests today", value: stats.traffic.requestsToday },
+              { label: "Unique visitors", value: stats.traffic.uniqueVisitors },
+              { label: "Track plays", value: stats.traffic.mp3Plays },
+              { label: "Errors 4xx/5xx", value: stats.traffic.errors4xx5xx },
+              { label: "Bandwidth", value: stats.traffic.bandwidth },
+            ].map(({ label, value }) => (
+              <div key={label} className="admin-highlight-fade p-4 rounded-2xl border border-line/50">
+                <span className="text-[8px] uppercase tracking-widest font-bold opacity-30 block mb-1">{label}</span>
+                <span className="text-xl font-bold tracking-tighter">{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Middle: system + content */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* System */}
+            <div className="admin-highlight-fade p-5 rounded-2xl border border-line/50 space-y-3">
+              <h3 className="text-[9px] uppercase tracking-widest font-bold opacity-30 mb-2">System</h3>
+              <div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] font-bold opacity-40">CPU</span>
+                  <span className="text-[11px] font-mono font-bold">{stats.system.cpu}%</span>
+                </div>
+                <Bar pct={stats.system.cpu} />
+              </div>
+              <div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] font-bold opacity-40">Memory</span>
+                  <span className="text-[11px] font-mono font-bold">{stats.system.memory.used} / {stats.system.memory.total}</span>
+                </div>
+                <Bar pct={stats.system.memory.pct} />
+              </div>
+              <div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] font-bold opacity-40">Disk</span>
+                  <span className="text-[11px] font-mono font-bold">{stats.system.disk.used} / {stats.system.disk.total}</span>
+                </div>
+                <Bar pct={stats.system.disk.pct} />
+              </div>
+              <Row label="Temperature" value={stats.system.temp ?? "N/A"} />
+              <Row label="System uptime" value={stats.system.uptime} />
+              {stats.server.pm2Uptime && <Row label="Process uptime" value={stats.server.pm2Uptime} />}
+            </div>
+
+            {/* Content counts */}
+            <div className="admin-highlight-fade p-5 rounded-2xl border border-line/50">
+              <h3 className="text-[9px] uppercase tracking-widest font-bold opacity-30 mb-4">Content</h3>
+              <Row label="Tracks" value={stats.counts.tracks} />
+              <Row label="Albums" value={stats.counts.albums} />
+              <Row label="Posts" value={stats.counts.posts} />
+              <Row label="Users" value={stats.counts.users} />
+            </div>
+
+            {/* Infra */}
+            <div className="admin-highlight-fade p-5 rounded-2xl border border-line/50">
+              <h3 className="text-[9px] uppercase tracking-widest font-bold opacity-30 mb-4">Infrastructure</h3>
+              <Row label="Node env" value={import.meta.env.MODE} />
+              <Row label="Stack" value="Express + SQLite" mono={false} />
+              <Row label="Proxy" value="Cloudflare + nginx" mono={false} />
+              <Row label="Host" value="Raspberry Pi 5" mono={false} />
+            </div>
+          </div>
+
+          {/* Deployments */}
+          <div className="admin-highlight-fade rounded-2xl border border-line/50 overflow-hidden">
+            <div className="px-5 py-4 border-b border-line/20 flex items-center justify-between">
+              <h3 className="text-[9px] uppercase tracking-widest font-bold opacity-30">Recent Deployments</h3>
+              <span className="text-[8px] font-mono opacity-20">{deploys.length} total</span>
+            </div>
+            {visibleDeploys.map((d: any, i: number) => (
+              <div key={d.hash ?? i} className="px-5 py-3 border-b border-line/20 last:border-0 flex items-start gap-4">
+                <span className="font-mono text-[9px] opacity-30 mt-0.5 shrink-0">{d.hash}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold tracking-tight truncate">{d.subject}</p>
+                  <p className="text-[9px] opacity-30 mt-0.5">{d.author} · {d.date}</p>
+                </div>
+                <span className="text-[9px] opacity-30 shrink-0 whitespace-nowrap">{d.relTime}</span>
+              </div>
+            ))}
+            {deploys.length > 5 && (
+              <button
+                onClick={() => setShowAllDeploys(v => !v)}
+                className="w-full py-3 text-[9px] uppercase tracking-widest font-bold opacity-30 hover:opacity-60 transition-opacity"
+              >
+                {showAllDeploys ? "Show less ↑" : `View all ${deploys.length} deploys ↓`}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminPanel = ({ user, isAdmin, posts, handleToggleVisibility, handleDeletePost, handleUpdatePost, settings, handleUpdateSettings, users, messages, changelog, comments, tracks, handleUploadTrack, handleUpdateTrack, handleDeleteTrack, handleDeleteAllTracks, handleToggleTrackVisibility, setLightboxImage, handleSyncTrack, bulkSyncAllTracks, autoFindMissingLinks, isAutoFinding, importFromSoundCloudProfile, isImporting, standardizeRecordLabels, migrateToFirebase, setUploadStatus, showNotification, confirmAction }: any) => {
   if (!user) return <Navigate to="/login" />;
   if (!isAdmin) return <Navigate to="/" />;
@@ -5054,6 +5213,9 @@ const AdminPanel = ({ user, isAdmin, posts, handleToggleVisibility, handleDelete
 
           {activeTab === 'stats' && (
             <div className="space-y-10">
+              <Link to="/admin/stats" className="inline-flex items-center gap-2 text-[9px] uppercase tracking-widest font-bold opacity-40 hover:opacity-80 transition-opacity border border-line/50 rounded-xl px-4 py-2">
+                <BarChart3 size={12} /> Open Live Server Dashboard →
+              </Link>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="admin-highlight-fade p-5 rounded-2xl border border-line/50">
                   <span className="text-[8px] uppercase tracking-widest font-bold opacity-30 block mb-1">Total Users</span>
@@ -6063,6 +6225,7 @@ function AppContent({ user, setUser, profile, setProfile, isAdmin, posts, tracks
             />
           } />
           <Route path="/admin/changelog" element={<ChangeLog isAdmin={isAdmin} user={user} changelog={changelog} />} />
+          <Route path="/admin/stats" element={<ServerStats user={user} isAdmin={isAdmin} />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </AnimatePresence>
