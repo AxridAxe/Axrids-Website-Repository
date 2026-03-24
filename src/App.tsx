@@ -5028,6 +5028,246 @@ const ServerStats = ({ user, isAdmin }: { user: LocalUser | null; isAdmin: boole
   );
 };
 
+// ── Web Admin Dashboard (mirrors Pi dashboard) ────────────────────────────
+const WebDashboard = ({ user, isAdmin }: { user: LocalUser | null; isAdmin: boolean }) => {
+  if (!user) return <Navigate to="/login" />;
+  if (!isAdmin) return <Navigate to="/" />;
+
+  const [stats, setStats] = useState<any>(null);
+  const [tab, setTab] = useState<'overview' | 'moderation' | 'server'>('overview');
+  const [users, setUsers] = useState<any[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
+  const sparkRef = useRef<HTMLCanvasElement>(null);
+  const sparkData = useRef<number[]>(Array(60).fill(0));
+  const navigate = useNavigate();
+
+  const fetchStats = () =>
+    fetch("/api/stats", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setStats(d));
+
+  useEffect(() => { fetchStats(); const iv = setInterval(fetchStats, 5000); return () => clearInterval(iv); }, []);
+
+  useEffect(() => {
+    if (!stats) return;
+    const rpm = stats.traffic?.requestsToday ?? 0;
+    sparkData.current = [...sparkData.current.slice(1), rpm % 60];
+    const canvas = sparkRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const data = sparkData.current;
+    const mx = Math.max(...data) || 1;
+    ctx.beginPath();
+    data.forEach((v, i) => {
+      const x = i * w / (data.length - 1);
+      const y = h - (v / mx) * (h - 4) - 2;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = "#00e676"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+    ctx.fillStyle = "rgba(0,230,118,0.1)"; ctx.fill();
+  }, [stats]);
+
+  useEffect(() => {
+    if (tab !== 'moderation') return;
+    fetch("/api/users", { credentials: "include" }).then(r => r.json()).then(setUsers).catch(() => {});
+    fetch("/api/posts", { credentials: "include" }).then(r => r.json()).then(async posts => {
+      const all: any[] = [];
+      for (const p of (posts || []).slice(0, 5)) {
+        const c = await fetch(`/api/posts/${p.id}/comments`, { credentials: "include" }).then(r => r.json()).catch(() => []);
+        all.push(...(c || []));
+      }
+      setComments(all.slice(0, 10));
+    });
+  }, [tab]);
+
+  const Bar = ({ pct }: { pct: number }) => (
+    <div className="w-full h-0.5 bg-white/10 rounded-full mt-1">
+      <div className={`h-full rounded-full ${pct > 80 ? "bg-red-500" : pct > 60 ? "bg-yellow-500" : "bg-white/60"}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+    </div>
+  );
+
+  const Card = ({ title, accent, children }: { title?: string; accent?: string; children: React.ReactNode }) => (
+    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+      {title && <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border-b border-white/10">
+        {accent && <div className="w-0.5 h-4 rounded-full" style={{ background: accent }} />}
+        <span className="text-[9px] uppercase tracking-widest font-bold opacity-30">{title}</span>
+      </div>}
+      <div className="p-4">{children}</div>
+    </div>
+  );
+
+  const Stat = ({ label, value, color = "text-paper" }: { label: string; value: any; color?: string }) => (
+    <div className="flex justify-between items-center py-1.5 border-b border-white/10 last:border-0">
+      <span className="text-[9px] uppercase tracking-wider font-bold opacity-30">{label}</span>
+      <span className={`text-[11px] font-bold font-mono ${color}`}>{value ?? "—"}</span>
+    </div>
+  );
+
+  const BigNum = ({ label, value, color }: { label: string; value: any; color: string }) => (
+    <div>
+      <div className="text-[8px] uppercase tracking-widest font-bold opacity-30 mb-1">{label}</div>
+      <div className={`text-2xl font-bold tracking-tighter ${color}`}>{value ?? "—"}</div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-ink text-paper flex flex-col">
+      {/* Top bar */}
+      <div className="flex items-center gap-4 px-5 py-3 bg-white/5 border-b border-white/10">
+        <div className="w-1 h-6 rounded-full bg-blue-500" />
+        <span className="text-lg font-bold tracking-tighter">AXRID</span>
+        <span className="text-[10px] font-bold opacity-20 uppercase tracking-widest">Server Dashboard</span>
+        <div className="flex items-center gap-2 ml-4">
+          <span className={`text-xs ${stats?.server?.online ? "text-emerald-400" : "text-red-500"}`}>●</span>
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${stats?.server?.online ? "text-emerald-400" : "text-red-500"}`}>
+            {stats?.server?.online ? "Online" : "Offline"}
+          </span>
+          {stats?.server?.pm2Uptime && <span className="text-[9px] opacity-30">uptime: {stats.server.pm2Uptime}</span>}
+        </div>
+        <div className="ml-auto flex items-center gap-4">
+          <span className="text-[10px] font-mono opacity-40">{new Date().toLocaleTimeString()}</span>
+          <button onClick={() => navigate("/")} className="text-[9px] uppercase tracking-widest font-bold opacity-30 hover:opacity-70 transition-opacity">⌂ Home</button>
+        </div>
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex border-b border-white/10 bg-white/5 px-5">
+        {(['overview', 'moderation', 'server'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`py-3 px-4 text-[9px] uppercase tracking-widest font-bold transition-all ${tab === t ? "text-paper border-b border-paper" : "opacity-20 hover:opacity-50"}`}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 p-5 overflow-auto">
+        {!stats && <div className="text-[11px] opacity-30 text-center py-20">Loading…</div>}
+
+        {/* ── Overview tab */}
+        {stats && tab === 'overview' && (
+          <div className="space-y-4">
+            {/* Traffic numbers */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card><BigNum label="Req / Min" value={stats.traffic?.requestsToday} color="text-emerald-400" /></Card>
+              <Card><BigNum label="Visitors Today" value={stats.traffic?.uniqueVisitors} color="text-blue-400" /></Card>
+              <Card><BigNum label="Requests Today" value={stats.traffic?.requestsToday} color="text-paper" /></Card>
+              <Card><BigNum label="Bandwidth" value={stats.traffic?.bandwidth} color="text-orange-400" /></Card>
+            </div>
+
+            {/* Sparkline */}
+            <Card title="Requests Per Minute" accent="#00e676">
+              <canvas ref={sparkRef} width={800} height={60} className="w-full" />
+            </Card>
+
+            {/* 3 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* System */}
+              <Card title="System" accent="#d500f9">
+                <div className="mb-3">
+                  <div className="flex justify-between text-[10px]"><span className="opacity-30 font-bold uppercase tracking-wider">CPU</span><span className="font-mono font-bold">{stats.system.cpu}%</span></div>
+                  <Bar pct={stats.system.cpu} />
+                </div>
+                <div className="mb-3">
+                  <div className="flex justify-between text-[10px]"><span className="opacity-30 font-bold uppercase tracking-wider">Memory</span><span className="font-mono font-bold">{stats.system.memory.used}/{stats.system.memory.total}</span></div>
+                  <Bar pct={stats.system.memory.pct} />
+                </div>
+                <div className="mb-3">
+                  <div className="flex justify-between text-[10px]"><span className="opacity-30 font-bold uppercase tracking-wider">Disk</span><span className="font-mono font-bold">{stats.system.disk.used}/{stats.system.disk.total}</span></div>
+                  <Bar pct={stats.system.disk.pct} />
+                </div>
+                <Stat label="Temperature" value={stats.system.temp} />
+                <Stat label="Uptime" value={stats.system.uptime} />
+              </Card>
+
+              {/* Site content */}
+              <Card title="Site Content" accent="#2979ff">
+                <Stat label="Tracks" value={stats.counts.tracks} />
+                <Stat label="Albums" value={stats.counts.albums} />
+                <Stat label="Posts" value={stats.counts.posts} />
+                <Stat label="Users" value={stats.counts.users} />
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <Stat label="Track Plays" value={stats.traffic.mp3Plays} color="text-blue-400" />
+                  <Stat label="Errors 4xx/5xx" value={stats.traffic.errors4xx5xx} color="text-red-400" />
+                </div>
+              </Card>
+
+              {/* Recent deploys */}
+              <Card title="Recent Deploys" accent="#333333">
+                {(stats.deploys || []).slice(0, 5).map((d: any, i: number) => (
+                  <div key={i} className="flex items-start gap-2 py-1.5 border-b border-white/10 last:border-0">
+                    <span className="font-mono text-[8px] opacity-30 shrink-0 mt-0.5">{d.hash}</span>
+                    <span className="text-[10px] flex-1 truncate">{d.subject}</span>
+                    <span className="text-[8px] opacity-20 shrink-0">{d.relTime}</span>
+                  </div>
+                ))}
+              </Card>
+            </div>
+
+            {/* Activity log */}
+            <Card title="Live Activity Log" accent="#333333">
+              {(stats.recentRequests || []).map((r: any, i: number) => (
+                <div key={i} className="flex items-center gap-3 py-1 border-b border-white/5 last:border-0">
+                  <span className={`text-[9px] font-bold ${r.status?.startsWith("2") ? "text-emerald-400" : r.status?.startsWith("3") ? "text-yellow-400" : "text-red-400"}`}>●</span>
+                  <span className="font-mono text-[9px] opacity-30 shrink-0">{r.ts}</span>
+                  <span className="font-mono text-[9px] opacity-60 truncate">{r.req}</span>
+                  <span className={`font-mono text-[9px] ml-auto shrink-0 ${r.status?.startsWith("2") ? "text-emerald-400" : r.status?.startsWith("3") ? "text-yellow-400" : "text-red-400"}`}>{r.status}</span>
+                </div>
+              ))}
+            </Card>
+          </div>
+        )}
+
+        {/* ── Moderation tab */}
+        {tab === 'moderation' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card title="Users">
+              {users.slice(0, 15).map((u: any) => (
+                <div key={u.id} className="flex items-center justify-between py-1.5 border-b border-white/10 last:border-0">
+                  <div>
+                    <div className="text-[11px] font-bold">{u.displayName}</div>
+                    <div className="text-[9px] opacity-30">{u.email}</div>
+                  </div>
+                  <span className={`text-[8px] uppercase tracking-widest font-bold ${u.role === "admin" ? "text-yellow-400" : "opacity-30"}`}>{u.role}</span>
+                </div>
+              ))}
+            </Card>
+            <Card title="Recent Comments">
+              {comments.length === 0 && <div className="text-[10px] opacity-30">No comments.</div>}
+              {comments.map((c: any, i: number) => (
+                <div key={i} className="py-1.5 border-b border-white/10 last:border-0">
+                  <div className="text-[9px] font-bold opacity-50">{c.authorName}</div>
+                  <div className="text-[10px] opacity-70 truncate">{c.content}</div>
+                </div>
+              ))}
+            </Card>
+          </div>
+        )}
+
+        {/* ── Server tab */}
+        {tab === 'server' && (
+          <div className="max-w-md space-y-3">
+            <Card title="Server Controls">
+              {[
+                { label: "⟳  Restart Website Server", color: "text-yellow-400", action: () => fetch("/api/stats", { credentials: "include" }) },
+              ].map(({ label, color }) => (
+                <button key={label} className={`w-full text-left px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition font-bold text-[11px] ${color} mb-2`}>{label}</button>
+              ))}
+              <Link to="/admin/stats" className="block px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition font-bold text-[11px] opacity-50">
+                ⇗ Open Full Stats Page
+              </Link>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const AdminPanel = ({ user, isAdmin, posts, handleToggleVisibility, handleDeletePost, handleUpdatePost, settings, handleUpdateSettings, users, messages, changelog, comments, tracks, handleUploadTrack, handleUpdateTrack, handleDeleteTrack, handleDeleteAllTracks, handleToggleTrackVisibility, setLightboxImage, handleSyncTrack, bulkSyncAllTracks, autoFindMissingLinks, isAutoFinding, importFromSoundCloudProfile, isImporting, standardizeRecordLabels, migrateToFirebase, setUploadStatus, showNotification, confirmAction }: any) => {
   if (!user) return <Navigate to="/login" />;
   if (!isAdmin) return <Navigate to="/" />;
@@ -6191,11 +6431,12 @@ function AppContent({ user, setUser, profile, setProfile, isAdmin, posts, tracks
               setLightboxImage={setLightboxImage}
             />
           } />
-          <Route path="/admin" element={
-            <AdminPanel 
+          <Route path="/admin" element={<WebDashboard user={user} isAdmin={isAdmin} />} />
+          <Route path="/admin/panel" element={
+            <AdminPanel
               user={user}
-              isAdmin={isAdmin} 
-              posts={posts} 
+              isAdmin={isAdmin}
+              posts={posts}
               handleToggleVisibility={handleToggleVisibility}
               handleDeletePost={handleDeletePost}
               handleUpdatePost={handleUpdatePost}

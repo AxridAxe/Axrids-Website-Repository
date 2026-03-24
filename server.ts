@@ -951,12 +951,24 @@ async function startServer() {
     const pm2Parts = pm2Raw.split(/\s+/);
     const pm2Uptime = pm2Up && pm2Parts.length > 13 ? pm2Parts[13] : null;
 
+    // ── Recent nginx log entries ─────────────────────────────────────────────
+    const recentRaw = sh(`tail -8 ${log} 2>/dev/null`);
+    const recentRequests = recentRaw.split("\n").filter(Boolean).map(line => {
+      try {
+        const ts  = line.split("[")[1]?.split("]")[0]?.slice(0, 17) ?? "";
+        const req = line.split('"')[1]?.slice(0, 60) ?? "";
+        const st  = line.split('"')[2]?.trim().split(" ")[0] ?? "";
+        return { ts, req, status: st };
+      } catch { return null; }
+    }).filter(Boolean).reverse();
+
     res.json({
       system: { uptime, memory, cpu, disk, temp },
       counts,
       traffic: { requestsToday, uniqueVisitors, errors4xx5xx, mp3Plays, bandwidth },
       deploys,
       server: { online: pm2Up, pm2Uptime },
+      recentRequests,
     });
   });
 
