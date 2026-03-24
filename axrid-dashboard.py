@@ -2,6 +2,9 @@
 import tkinter as tk
 import subprocess, glob, threading, time, os, signal, collections, urllib.request, urllib.parse, json
 
+# ── Admin PIN (change this) ────────────────────────────────────────────────────
+ADMIN_PIN = "1234"
+
 # ── Palette ───────────────────────────────────────────────────────────────────
 BG     = "#080808"
 CARD   = "#0e0e0e"
@@ -125,7 +128,73 @@ class SettingsOverlay(tk.Toplevel):
         self.after(100, self.focus_force)
 
     def _build(self):
-        self._show_settings()
+        self._show_pin()
+
+    def _close_btn(self):
+        tk.Button(self, text="✕", font=(FONT, 14), bg=BG, fg=DIM,
+                  activebackground=BG, activeforeground=ACCENT,
+                  relief="flat", cursor="hand2", bd=0,
+                  command=self.destroy).place(relx=1.0, rely=0.0,
+                                              anchor="ne", x=-20, y=20)
+
+    def _show_pin(self):
+        for w in self.winfo_children():
+            w.destroy()
+        self._close_btn()
+
+        outer = tk.Frame(self, bg=BG)
+        outer.place(relx=0.5, rely=0.5, anchor="center")
+
+        card = tk.Frame(outer, bg=CARD, padx=40, pady=40)
+        card.pack()
+
+        tk.Label(card, text="SERVER SETTINGS", font=(FONT, 11, "bold"),
+                 bg=CARD, fg=DIM).pack(anchor="w", pady=(0, 4))
+        tk.Label(card, text="Enter PIN to continue",
+                 font=(FONT, 9), bg=CARD, fg=DIM).pack(anchor="w", pady=(0, 20))
+
+        self._pin = ""
+        self._pin_dots = tk.Label(card, text="○ ○ ○ ○", font=(FONT, 18),
+                                  bg=CARD, fg=DIM)
+        self._pin_dots.pack(pady=(0, 16))
+
+        self._pin_err = tk.Label(card, text="", font=(FONT, 9), bg=CARD, fg=RED)
+        self._pin_err.pack(pady=(0, 8))
+
+        pad = tk.Frame(card, bg=CARD)
+        pad.pack()
+        for i, digits in enumerate(["1 2 3", "4 5 6", "7 8 9", "  0  "]):
+            row = tk.Frame(pad, bg=CARD)
+            row.pack()
+            for d in digits.split():
+                tk.Button(row, text=d, font=(FONT, 14, "bold"),
+                          bg=CARD2, fg=ACCENT, activebackground=BORDER,
+                          activeforeground=ACCENT, relief="flat",
+                          cursor="hand2", bd=0, width=4, pady=8,
+                          command=lambda x=d: self._pin_press(x)).pack(side="left", padx=4, pady=4)
+
+        tk.Button(pad, text="⌫ Clear", font=(FONT, 10),
+                  bg=CARD2, fg=DIM, activebackground=BORDER,
+                  relief="flat", cursor="hand2", bd=0, pady=6,
+                  command=self._pin_clear).pack(pady=(8, 0))
+
+    def _pin_press(self, d):
+        if len(self._pin) >= 4:
+            return
+        self._pin += d
+        filled = "● " * len(self._pin) + "○ " * (4 - len(self._pin))
+        self._pin_dots.config(text=filled.strip())
+        if len(self._pin) == 4:
+            if self._pin == ADMIN_PIN:
+                self._show_settings()
+            else:
+                self._pin_err.config(text="Incorrect PIN.")
+                self.after(600, self._pin_clear)
+
+    def _pin_clear(self):
+        self._pin = ""
+        self._pin_dots.config(text="○ ○ ○ ○")
+        self._pin_err.config(text="")
 
     def _show_settings(self):
         for w in self.winfo_children():
