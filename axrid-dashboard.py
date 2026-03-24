@@ -259,6 +259,7 @@ class SettingsOverlay(tk.Toplevel):
                       padx=20, pady=10, bd=0, width=30,
                       command=cmd).pack(pady=4, anchor="w")
 
+        _btn("←  Back", DIM, self._show_pin)
         _btn("⟳  Restart Website Server", YELLOW, self._restart_server)
         _btn("⏹  Stop Website Server",    RED,    self._stop_server)
         _btn("▶  Start Website Server",   GREEN,  self._start_server)
