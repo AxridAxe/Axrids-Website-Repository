@@ -24,10 +24,11 @@ FG      = "#cccccc"
 
 W = 680
 
-def label(parent, text, size=9, bold=False, color=FG, anchor="w", **kw):
+def label(parent, text, size=9, bold=False, color=FG, anchor="w", bg=None, **kw):
     weight = "bold" if bold else "normal"
+    bg = bg or parent.cget("bg")
     return tk.Label(parent, text=text, font=("Helvetica", size, weight),
-                    bg=parent.cget("bg"), fg=color, anchor=anchor, **kw)
+                    bg=bg, fg=color, anchor=anchor, **kw)
 
 class Bar(tk.Canvas):
     def __init__(self, parent, color=BLUE, **kw):
