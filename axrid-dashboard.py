@@ -3,7 +3,7 @@ import tkinter as tk
 import subprocess, glob, threading, time, os, signal, collections, urllib.request, urllib.parse, json
 
 # ── Admin PIN (change this) ────────────────────────────────────────────────────
-ADMIN_PIN = "1234"
+ADMIN_PIN = "000000"
 
 # ── Palette ───────────────────────────────────────────────────────────────────
 BG     = "#080808"
@@ -154,7 +154,7 @@ class SettingsOverlay(tk.Toplevel):
                  font=(FONT, 9), bg=CARD, fg=DIM).pack(anchor="w", pady=(0, 20))
 
         self._pin = ""
-        self._pin_dots = tk.Label(card, text="○ ○ ○ ○", font=(FONT, 18),
+        self._pin_dots = tk.Label(card, text="○ ○ ○ ○ ○ ○", font=(FONT, 18),
                                   bg=CARD, fg=DIM)
         self._pin_dots.pack(pady=(0, 16))
 
@@ -179,12 +179,12 @@ class SettingsOverlay(tk.Toplevel):
                   command=self._pin_clear).pack(pady=(8, 0))
 
     def _pin_press(self, d):
-        if len(self._pin) >= 4:
+        if len(self._pin) >= 6:
             return
         self._pin += d
-        filled = "● " * len(self._pin) + "○ " * (4 - len(self._pin))
+        filled = "● " * len(self._pin) + "○ " * (6 - len(self._pin))
         self._pin_dots.config(text=filled.strip())
-        if len(self._pin) == 4:
+        if len(self._pin) == 6:
             if self._pin == ADMIN_PIN:
                 self._show_settings()
             else:
@@ -193,7 +193,7 @@ class SettingsOverlay(tk.Toplevel):
 
     def _pin_clear(self):
         self._pin = ""
-        self._pin_dots.config(text="○ ○ ○ ○")
+        self._pin_dots.config(text="○ ○ ○ ○ ○ ○")
         self._pin_err.config(text="")
 
     def _show_settings(self):
