@@ -1216,10 +1216,11 @@ setInterval(poll, 3000);
     });
 
     // ── PM2 status ───────────────────────────────────────────────────────────
-    const pm2Raw  = sh("pm2 list 2>/dev/null | grep axrid-website");
-    const pm2Up   = pm2Raw.includes("online");
-    const pm2Parts = pm2Raw.split(/\s+/);
-    const pm2Uptime = pm2Up && pm2Parts.length > 13 ? pm2Parts[13] : null;
+    const pm2Raw    = sh("pm2 list 2>/dev/null | grep axrid-website");
+    const pm2Up     = pm2Raw.includes("online");
+    const pm2Show   = sh("pm2 show axrid-website 2>/dev/null");
+    const uptimeMatch = pm2Show.match(/uptime\s*[│|]\s*([^\n│|]+)/i);
+    const pm2Uptime = pm2Up ? (uptimeMatch?.[1]?.trim() ?? null) : null;
 
     // ── Network / address ────────────────────────────────────────────────────
     const localIp  = sh("hostname -I 2>/dev/null | awk '{print $1}'") || null;
